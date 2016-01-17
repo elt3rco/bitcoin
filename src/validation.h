@@ -301,6 +301,7 @@ void PruneAndFlush();
 /** Prune block files up to a given height */
 void PruneBlockFilesManual(int nManualPruneHeight);
 
+static const std::string rejectmsg_absurdfee = "absurdly-high-fee";
 static const std::string rejectmsg_lowfee_mempool = "mempool min fee not met";
 static const std::string rejectmsg_lowfee_relay = "min relay fee not met";
 static const std::string rejectmsg_mempoolfull = "mempool full";
