@@ -1039,7 +1039,7 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
                 "\nAlso see createrawtransaction and signrawtransactionwithkey calls.\n",
                 {
                     {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The hex string of the raw transaction"},
-                    {"allowhighfees", RPCArg::Type::BOOL, /* default */ "false", "Allow high fees"},
+                    {"ignore_reject", RPCArg::Type::ARR, /* default */ "[]", "Rejection conditions to ignore, eg 'absurdly-high-fee'"},
                 },
                 RPCResult{
             "\"hex\"             (string) The transaction hash in hex\n"
@@ -1056,7 +1056,7 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
                 },
             }.ToString());
 
-    RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VBOOL});
+    RPCTypeCheck(request.params, {UniValue::VSTR});
 
     // parse hex string from parameter
     CMutableTransaction mtx;
@@ -1064,12 +1064,28 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     CTransactionRef tx(MakeTransactionRef(std::move(mtx)));
 
-    bool allowhighfees = false;
-    if (!request.params[1].isNull()) allowhighfees = request.params[1].get_bool();
-    const CAmount highfee{allowhighfees ? 0 : ::maxTxFee};
+    ignore_rejects_type ignore_rejects;
+    const UniValue& json_ign_rejs = request.params[1];
+    if (!json_ign_rejs.isNull()) {
+        if (json_ign_rejs.isBool()) {
+            // This parameter used to be boolean allowhighfees
+            if (json_ign_rejs.isTrue()) {
+                ignore_rejects.insert(rejectmsg_absurdfee);
+            }
+        } else {
+            RPCTypeCheckArgument(json_ign_rejs, UniValue::VARR);
+
+            for (size_t i = 0; i < json_ign_rejs.size(); ++i) {
+                const UniValue& json_ign_rej = json_ign_rejs[i];
+                ignore_rejects.insert(json_ign_rej.get_str());
+            }
+        }
+    }
+
+    const CAmount highfee{::maxTxFee};
     uint256 txid;
     std::string err_string;
-    const TransactionError err = BroadcastTransaction(tx, txid, err_string, highfee);
+    const TransactionError err = BroadcastTransaction(tx, txid, err_string, highfee, ignore_rejects);
     if (TransactionError::OK != err) {
         throw JSONRPCTransactionError(err, err_string);
     }
@@ -2048,7 +2064,7 @@ static const CRPCCommand commands[] =
     { "rawtransactions",    "createrawtransaction",         &createrawtransaction,      {"inputs","outputs","locktime","replaceable"} },
     { "rawtransactions",    "decoderawtransaction",         &decoderawtransaction,      {"hexstring","iswitness"} },
     { "rawtransactions",    "decodescript",                 &decodescript,              {"hexstring"} },
-    { "rawtransactions",    "sendrawtransaction",           &sendrawtransaction,        {"hexstring","allowhighfees"} },
+    { "rawtransactions",    "sendrawtransaction",           &sendrawtransaction,        {"hexstring","ignore_rejects|allowhighfees"} },
     { "rawtransactions",    "combinerawtransaction",        &combinerawtransaction,     {"txs"} },
     { "hidden",             "signrawtransaction",           &signrawtransaction,        {"hexstring","prevtxs","privkeys","sighashtype"} },
     { "rawtransactions",    "signrawtransactionwithkey",    &signrawtransactionwithkey, {"hexstring","privkeys","prevtxs","sighashtype"} },
