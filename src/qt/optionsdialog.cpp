@@ -192,6 +192,7 @@ void OptionsDialog::setModel(OptionsModel *_model)
     connect(ui->allowIncoming, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->connectSocks, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     connect(ui->connectSocksTor, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
+    connect(ui->peerbloomfilters, &QCheckBox::clicked, this, &OptionsDialog::showRestartWarning);
     /* Display */
     connect(ui->lang, static_cast<void (QValueComboBox::*)()>(&QValueComboBox::valueChanged), [this]{ showRestartWarning(); });
     connect(ui->thirdPartyTxUrls, &QLineEdit::textChanged, [this]{ showRestartWarning(); });
@@ -246,6 +247,8 @@ void OptionsDialog::setMapper()
         ui->maxuploadtarget->setEnabled(true);
         ui->maxuploadtarget->setValue(current_maxuploadtarget);
     }
+
+    mapper->addMapping(ui->peerbloomfilters, OptionsModel::peerbloomfilters);
 
     /* Window */
 #ifndef Q_OS_MAC
