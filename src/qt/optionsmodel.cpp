@@ -14,7 +14,7 @@
 
 #include <interfaces/node.h>
 #include <chainparams.h>
-#include <policy/policy.h> // for DEFAULT_MAX_MEMPOOL_SIZE
+#include <policy/policy.h>
 #include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS, DEFAULT_MEMPOOL_EXPIRY
 #include <net.h>
 #include <net_processing.h>  // for maxorphantx
@@ -376,6 +376,10 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return qlonglong(gArgs.GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY));
         case rejectunknownscripts:
             return fRequireStandard;
+        case bytespersigop:
+            return nBytesPerSigOp;
+        case bytespersigopstrict:
+            return nBytesPerSigOpStrict;
         default:
             return QVariant();
         }
@@ -644,6 +648,24 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 fRequireStandard = fNewValue;
                 // This option is inverted in the config:
                 gArgs.ModifyRWConfigFile("acceptnonstdtxn", strprintf("%d", ! fNewValue));
+            }
+            break;
+        }
+        case bytespersigop:
+        {
+            unsigned int nNv = value.toLongLong();
+            if (nNv != nBytesPerSigOp) {
+                gArgs.ModifyRWConfigFile("bytespersigop", value.toString().toStdString());
+                nBytesPerSigOp = nNv;
+            }
+            break;
+        }
+        case bytespersigopstrict:
+        {
+            unsigned int nNv = value.toLongLong();
+            if (nNv != nBytesPerSigOpStrict) {
+                gArgs.ModifyRWConfigFile("bytespersigopstrict", value.toString().toStdString());
+                nBytesPerSigOpStrict = nNv;
             }
             break;
         }
