@@ -380,6 +380,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return nBytesPerSigOp;
         case bytespersigopstrict:
             return nBytesPerSigOpStrict;
+        case limitancestorcount:
+            return qlonglong(gArgs.GetArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT));
         default:
             return QVariant();
         }
@@ -666,6 +668,17 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             if (nNv != nBytesPerSigOpStrict) {
                 gArgs.ModifyRWConfigFile("bytespersigopstrict", value.toString().toStdString());
                 nBytesPerSigOpStrict = nNv;
+            }
+            break;
+        }
+        case limitancestorcount:
+        {
+            long long nOldValue = gArgs.GetArg("-limitancestorcount", DEFAULT_ANCESTOR_LIMIT);
+            long long nNv = value.toLongLong();
+            if (nNv != nOldValue) {
+                std::string strNv = value.toString().toStdString();
+                gArgs.ForceSetArg("-limitancestorcount", strNv);
+                gArgs.ModifyRWConfigFile("limitancestorcount", strNv);
             }
             break;
         }
