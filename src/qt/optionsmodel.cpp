@@ -390,6 +390,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return qlonglong(gArgs.GetArg("-limitdescendantsize", DEFAULT_DESCENDANT_SIZE_LIMIT));
         case rejectbaremultisig:
             return !fIsBareMultisigStd;
+        case datacarriersize:
+            return fAcceptDatacarrier ? qlonglong(nMaxDatacarrierBytes) : qlonglong(0);
         default:
             return QVariant();
         }
@@ -730,6 +732,20 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             if (fNewValue != fIsBareMultisigStd) {
                 fIsBareMultisigStd = fNewValue;
                 gArgs.ModifyRWConfigFile("permitbaremultisig", strprintf("%d", fNewValue));
+            }
+            break;
+        }
+        case datacarriersize:
+        {
+            const int nNewSize = value.toInt();
+            const bool fNewEn = (nNewSize > 0);
+            if (fNewEn && unsigned(nNewSize) != nMaxDatacarrierBytes) {
+                gArgs.ModifyRWConfigFile("datacarriersize", value.toString().toStdString());
+                nMaxDatacarrierBytes = nNewSize;
+            }
+            if (fNewEn != fAcceptDatacarrier) {
+                gArgs.ModifyRWConfigFile("datacarrier", strprintf("%d", fNewEn));
+                fAcceptDatacarrier = fNewEn;
             }
             break;
         }
