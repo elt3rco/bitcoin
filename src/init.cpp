@@ -76,6 +76,7 @@
 #endif
 
 bool fFeeEstimatesInitialized = false;
+static const bool DEFAULT_COREPOLICY = false;
 static const bool DEFAULT_PROXYRANDOMIZE = true;
 static const bool DEFAULT_REST_ENABLE = false;
 static const bool DEFAULT_STOPAFTERBLOCKIMPORT = false;
@@ -386,6 +387,7 @@ void SetupServerArgs()
     gArgs.AddArg("-blocksonly", strprintf("Whether to operate in a blocks only mode (default: %u)", DEFAULT_BLOCKSONLY), true, OptionsCategory::OPTIONS);
     gArgs.AddArg("-conf=<file>", strprintf("Specify configuration file. Relative paths will be prefixed by datadir location. (default: %s)", BITCOIN_CONF_FILENAME), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-confrw=<file>", strprintf("Specify read/write configuration file. Relative paths will be prefixed by the network-specific datadir location. (default: %s)", BITCOIN_RW_CONF_FILENAME), false, OptionsCategory::OPTIONS);
+    gArgs.AddArg("-corepolicy", strprintf("Use Bitcoin Core policy defaults (default: %s)", DEFAULT_COREPOLICY), false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-datadir=<dir>", "Specify data directory", false, OptionsCategory::OPTIONS);
     gArgs.AddArg("-dbbatchsize", strprintf("Maximum database write batch size in bytes (default: %u)", nDefaultDbBatchSize), true, OptionsCategory::OPTIONS);
     gArgs.AddArg("-dbcache=<n>", strprintf("Maximum database cache size <n> MiB (%d to %d, default: %d). In addition, unused mempool memory is shared for this cache (see -maxmempool).", nMinDbCache, nMaxDbCache, nDefaultDbCache), false, OptionsCategory::OPTIONS);
@@ -810,6 +812,17 @@ static bool AppInitServers()
 // Parameter interaction based on rules
 void InitParameterInteraction()
 {
+    if (gArgs.GetBoolArg("-corepolicy", DEFAULT_COREPOLICY)) {
+        gArgs.SoftSetArg("-bytespersigopstrict", "0");
+        gArgs.SoftSetArg("-permitbaremultisig", "1");
+        gArgs.SoftSetArg("-datacarriersize", "83");
+
+        gArgs.SoftSetArg("-spkreuse", "allow");
+        gArgs.SoftSetArg("-blockprioritysize", "0");
+        gArgs.SoftSetArg("-blockmaxsize", "4000000");
+        gArgs.SoftSetArg("-blockmaxweight", "3996000");
+    }
+
     // when specifying an explicit binding address, you want to listen on it
     // even when -connect or -proxy is specified
     if (gArgs.IsArgSet("-bind")) {

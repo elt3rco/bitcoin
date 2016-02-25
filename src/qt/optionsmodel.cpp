@@ -871,6 +871,9 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             }
             break;
         }
+        case corepolicy:
+            gArgs.ModifyRWConfigFile("corepolicy", value.toString().toStdString());
+            break;
         default:
             break;
         }
