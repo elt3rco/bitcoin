@@ -756,9 +756,12 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         // itself can contain sigops MAX_STANDARD_TX_SIGOPS is less than
         // MAX_BLOCK_SIGOPS; we still consider this an invalid rather than
         // merely non-standard transaction.
-        if (nSigOpsCost > MAX_STANDARD_TX_SIGOPS_COST)
+        // To avoid rejecting low-sigop bare-multisig transactions, the sigops
+        // are counted a second time more accurately.
+        if ((nSigOpsCost > MAX_STANDARD_TX_SIGOPS_COST) || (nBytesPerSigOpStrict && GetAccurateTransactionSigOpCost(tx, view, STANDARD_SCRIPT_VERIFY_FLAGS) > nSize * WITNESS_SCALE_FACTOR / nBytesPerSigOpStrict)) {
             MaybeRejectDbg(REJECT_NONSTANDARD, "bad-txns-too-many-sigops", false,
                 strprintf("%d", nSigOpsCost));
+        }
 
         poolMinFeeRate = pool.GetMinFee(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE) * 1000000);
         CAmount mempoolRejectFee = poolMinFeeRate.GetFee(nSize);
