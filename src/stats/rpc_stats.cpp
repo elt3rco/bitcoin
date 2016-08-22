@@ -21,8 +21,11 @@ UniValue getmempoolstats(const JSONRPCRequest& request)
             "  {\n"
             "    \"time_from\" : \"timestamp\",     (numeric) Timestamp, first sample\n"
             "    \"time_to\"   : \"timestamp\",     (numeric) Timestamp, last sample\n"
-            "    \"flatdata\"  : \"<delta_in_secs>,<tx_count>,<dynamic_mem_usage>,<min_fee_per_k>,<delta_in_secs_2>,...>\"\n"
-            "                   (all samples in a single string, 4 numeric values per sample, no delimiter between samples)"
+            "    \"samples\"   : [\n"
+            "                    [<delta_in_secs>,<tx_count>,<dynamic_mem_usage>,<min_fee_per_k>],\n"
+            "                    [<delta_in_secs>,<tx_count>,<dynamic_mem_usage>,<min_fee_per_k>],\n"
+            "                    ...\n"
+            "                  ]\n"
             "  }\n"
             "\nExamples:\n" +
             HelpExampleCli("getmempoolstats", "") + HelpExampleRpc("getmempoolstats", ""));
@@ -33,20 +36,20 @@ UniValue getmempoolstats(const JSONRPCRequest& request)
     mempoolSamples_t samples = CStats::DefaultStats()->mempoolGetValuesInRange(timeFrom, timeTo);
 
     // use "flat" json encoding for performance reasons
-    std::string flatData;
+    UniValue samplesObj(UniValue::VARR);
     for (struct CStatsMempoolSample& sample : samples) {
-        flatData += std::to_string(sample.m_time_delta) + ",";
-        flatData += std::to_string(sample.m_tx_count) + ",";
-        flatData += std::to_string(sample.m_dyn_mem_usage) + ",";
-        flatData += std::to_string(sample.m_min_fee_per_k) + ",";
+        UniValue singleSample(UniValue::VARR);
+        singleSample.push_back(UniValue((uint64_t)sample.m_time_delta));
+        singleSample.push_back(UniValue(sample.m_tx_count));
+        singleSample.push_back(UniValue(sample.m_dyn_mem_usage));
+        singleSample.push_back(UniValue(sample.m_min_fee_per_k));
+        samplesObj.push_back(singleSample);
     }
-    if (flatData.size() > 0)
-        flatData.pop_back();
 
     UniValue result(UniValue::VOBJ);
     result.pushKV("time_from", timeFrom);
     result.pushKV("time_to", timeTo);
-    result.pushKV("flatdata", flatData);
+    result.pushKV("samples", samplesObj);
 
     return result;
 }
