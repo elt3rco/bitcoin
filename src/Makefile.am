@@ -662,9 +662,12 @@ endif
 
 # Rendered icons must be here, not in Makefile.qt.include, since they are distributed with the source tarball
 
-RES_RENDERED_ICON_SRC = qt/res/src/bitcoin.svg
+RES_RENDERED_ICON_SRC = \
+  qt/res/src/chart.svg \
+  qt/res/src/bitcoin.svg
 
 RES_RENDERED_ICONS = \
+  qt/res/rendered_icons/chart.png \
   qt/res/rendered_icons/about.png \
   qt/res/rendered_icons/bitcoin.ico \
   qt/res/rendered_icons/bitcoin_testnet.ico \
@@ -679,6 +682,10 @@ RES_ALL_RENDERED_ICONS = $(RES_RENDERED_ICONS) \
 EXTRA_DIST += $(RES_RENDERED_ICON_SRC) $(RES_ALL_RENDERED_ICONS)
 
 if CAN_RENDER_ICONS
+
+qt/res/rendered_icons/chart.png: qt/res/src/chart.svg
+	@$(MKDIR_P) $(@D)
+	$(RSVG_CONVERT) -f png < $< > $@
 
 qt/res/rendered_icons/about.png: qt/res/rendered_icons/about.svg
 	$(RSVG_CONVERT) -f png -d 142 -p 142 < $< | $(IMAGEMAGICK_CONVERT) - -crop 128x128+7+7 -colorspace Gray -strip $@
