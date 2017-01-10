@@ -743,6 +743,48 @@ UniValue dumpprivkey(const JSONRPCRequest& request)
     return EncodeSecret(vchSecret);
 }
 
+UniValue dumpmasterprivkey(const JSONRPCRequest& request)
+{
+    std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
+    CWallet* const pwallet = wallet.get();
+    if (!EnsureWalletIsAvailable(pwallet, request.fHelp)) {
+        return NullUniValue;
+    }
+
+    if (request.fHelp || request.params.size() != 0)
+        throw std::runtime_error(
+            "dumpmasterprivkey\n"
+            "\nReveals the current master private key.\n"
+            "\nResult:\n"
+            " \"key\"                 (string) The HD master private key\n"
+            "\nExamples:\n"
+            + HelpExampleCli("dumpmasterprivkey", "")
+        );
+
+    LOCK2(cs_main, pwallet->cs_wallet);
+
+    EnsureWalletIsUnlocked(pwallet);
+
+    CKeyID seed_id = pwallet->GetHDChain().seed_id;
+    if (!pwallet->IsHDEnabled())
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Wallet is not a HD wallet.");
+    }
+    CKey seed;
+    if (pwallet->GetKey(seed_id, seed))
+    {
+        CExtKey masterKey;
+        masterKey.SetSeed(seed.begin(), seed.size());
+
+        return EncodeExtKey(masterKey);
+    }
+    else
+    {
+        throw JSONRPCError(RPC_WALLET_ERROR, "Unable to retrieve HD master private key");
+        return NullUniValue;
+    }
+}
+
 
 UniValue dumpwallet(const JSONRPCRequest& request)
 {
