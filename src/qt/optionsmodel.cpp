@@ -379,6 +379,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return qlonglong(gArgs.GetArg("-maxorphantx", DEFAULT_MAX_ORPHAN_TRANSACTIONS));
         case maxmempool:
             return qlonglong(gArgs.GetArg("-maxmempool", DEFAULT_MAX_MEMPOOL_SIZE));
+        case incrementalrelayfee:
+            return qlonglong(incrementalRelayFee.GetFeePerK());
         case mempoolexpiry:
             return qlonglong(gArgs.GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY));
         case rejectunknownscripts:
@@ -673,6 +675,15 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 if (nNv < nOldValue) {
                     LimitMempoolSize();
                 }
+            }
+            break;
+        }
+        case incrementalrelayfee:
+        {
+            CAmount nNv = value.toLongLong();
+            if (nNv != incrementalRelayFee.GetFeePerK()) {
+                gArgs.ModifyRWConfigFile("incrementalrelayfee", FormatMoney(nNv));
+                incrementalRelayFee = CFeeRate(nNv);
             }
             break;
         }

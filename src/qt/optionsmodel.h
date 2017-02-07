@@ -64,6 +64,7 @@ public:
         mempoolreplacement,
         maxorphantx,
         maxmempool,
+        incrementalrelayfee,
         mempoolexpiry,
         rejectunknownscripts,   // bool
         minrelaytxfee,
