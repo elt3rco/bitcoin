@@ -353,6 +353,10 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return strThirdPartyTxUrls;
         case Language:
             return settings.value("language");
+#ifdef ENABLE_WALLET
+        case walletrbf:
+            return gArgs.GetBoolArg("-walletrbf", DEFAULT_WALLET_RBF);
+#endif
         case CoinControlFeatures:
             return fCoinControlFeatures;
         case PruneMiB:
@@ -546,6 +550,21 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 setRestartRequired(true);
             }
             break;
+#ifdef ENABLE_WALLET
+        case walletrbf:
+        {
+            const bool fNewValue = value.toBool();
+            if (fNewValue != gArgs.GetBoolArg("-walletrbf", DEFAULT_WALLET_RBF)) {
+                const std::string newvalue_str = strprintf("%d", fNewValue);
+                gArgs.ModifyRWConfigFile("walletrbf", newvalue_str);
+                gArgs.ForceSetArg("-walletrbf", newvalue_str);
+                for (auto& wallet : GetWallets()) {
+                    wallet->m_signal_rbf = fNewValue;
+                }
+            }
+            break;
+        }
+#endif
         case CoinControlFeatures:
             fCoinControlFeatures = value.toBool();
             settings.setValue("fCoinControlFeatures", fCoinControlFeatures);

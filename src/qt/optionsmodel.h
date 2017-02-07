@@ -50,6 +50,7 @@ public:
         DisplayAddresses,       // bool
         ThirdPartyTxUrls,       // QString
         Language,               // QString
+        walletrbf,              // bool
         CoinControlFeatures,    // bool
         ThreadsScriptVerif,     // int
         PruneMiB,               // int
