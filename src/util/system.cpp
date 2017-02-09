@@ -72,6 +72,8 @@
 #include <thread>
 #include <unordered_set>
 
+#include <boost/optional.hpp>
+
 // Application startup time (used for uptime calculation)
 const int64_t nStartupTime = GetTime();
 
@@ -993,9 +995,23 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
     rwconf_path = GetRWConfigFile(rwconf_path_str);
     fs::ifstream rwconf_stream(rwconf_path);
     if (rwconf_stream.good()) {
+        // HACK: Save the bitcoin.conf prune setting so we can detect rwconf setting it
+        boost::optional<std::vector<std::string>> conf_prune_setting;
+        if (m_config_args.count("-prune")) {
+            conf_prune_setting = m_config_args.at("-prune");
+            m_config_args.erase("-prune");
+        }
+
         // confrw gets prepended before conf settings, and is always network-specific (it's in the network-specific datadir)
         if (!ReadConfigStream(rwconf_stream, error, ignore_invalid_keys, true, true)) {
             return false;
+        }
+
+        if (m_config_args.count("-prune")) {
+            // HACK: It's only safe to discard conf_prune_setting here because it's not a multi-value option
+            rwconf_had_prune_option = true;
+        } else if (conf_prune_setting != boost::none) {
+            m_config_args["-prune"] = conf_prune_setting.get();
         }
     }
     if (!rwconf_queued_writes.empty()) {
