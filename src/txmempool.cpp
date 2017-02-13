@@ -8,10 +8,12 @@
 #include <consensus/consensus.h>
 #include <consensus/tx_verify.h>
 #include <consensus/validation.h>
+#include <crypto/ripemd160.h>
 #include <validation.h>
 #include <policy/policy.h>
 #include <policy/fees.h>
 #include <reverse_iterator.h>
+#include <script/script.h>
 #include <streams.h>
 #include <timedata.h>
 #include <util/system.h>
@@ -51,6 +53,13 @@ void CTxMemPoolEntry::UpdateLockPoints(const LockPoints& lp)
 size_t CTxMemPoolEntry::GetTxSize() const
 {
     return GetVirtualTransactionSize(nTxWeight, sigOpCost);
+}
+
+uint160 ScriptHashkey(const CScript& script)
+{
+    uint160 hash;
+    CRIPEMD160().Write(script.data(), script.size()).Finalize(hash.begin());
+    return hash;
 }
 
 // Update the given tx for any in-mempool descendants.
@@ -401,6 +410,10 @@ void CTxMemPool::addUnchecked(const CTxMemPoolEntry &entry, setEntries &setAnces
 
     vTxHashes.emplace_back(tx.GetWitnessHash(), newit);
     newit->vTxHashesIdx = vTxHashes.size() - 1;
+
+    for (auto& vSPK : entry.mapSPK) {
+        mapUsedSPK[vSPK.first] = MemPool_SPK_State(mapUsedSPK[vSPK.first] | vSPK.second);
+    }
 }
 
 void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
@@ -418,6 +431,14 @@ void CTxMemPool::removeUnchecked(txiter it, MemPoolRemovalReason reason)
             vTxHashes.shrink_to_fit();
     } else
         vTxHashes.clear();
+
+    for (auto& vSPK : it->mapSPK) {
+        if (vSPK.second == mapUsedSPK.find(vSPK.first)->second) {
+            mapUsedSPK.erase(vSPK.first);
+        } else {
+            mapUsedSPK[vSPK.first] = MemPool_SPK_State(mapUsedSPK[vSPK.first] & ~vSPK.second);
+        }
+    }
 
     totalTxSize -= it->GetTxSize();
     cachedInnerUsage -= it->DynamicMemoryUsage();
@@ -580,6 +601,7 @@ void CTxMemPool::_clear()
     mapLinks.clear();
     mapTx.clear();
     mapNextTx.clear();
+    mapUsedSPK.clear();
     totalTxSize = 0;
     cachedInnerUsage = 0;
     lastRollingFeeUpdate = GetTime();

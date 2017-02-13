@@ -162,6 +162,14 @@ extern std::atomic_bool fReindex;
 extern int nScriptCheckThreads;
 extern bool fIsBareMultisigStd;
 extern bool fRequireStandard;
+
+enum SpkReuseModes {
+    SRM_ALLOW,
+    SRM_REJECT,
+};
+
+extern SpkReuseModes SpkReuseMode;
+
 extern bool fCheckBlockIndex;
 extern bool fCheckpointsEnabled;
 extern size_t nCoinCacheUsage;
