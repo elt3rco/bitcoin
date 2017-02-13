@@ -67,6 +67,7 @@ public:
         incrementalrelayfee,
         mempoolexpiry,
         rejectunknownscripts,   // bool
+        rejectspkreuse,         // bool
         minrelaytxfee,
         bytespersigop,
         bytespersigopstrict,
@@ -126,6 +127,7 @@ private:
 
     /* rwconf settings that require a restart */
     bool f_peerbloomfilters;
+    bool f_rejectspkreuse;
 
     // Add option to list of GUI options overridden through command line/config file
     void addOverriddenOption(const std::string &option);

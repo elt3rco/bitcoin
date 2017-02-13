@@ -23,6 +23,7 @@
 #include <txdb.h> // for -dbcache defaults
 #include <qt/intro.h>
 #include <util/moneystr.h> // for FormatMoney
+#include <validation.h>  // for SpkReuseMode
 #ifdef ENABLE_WALLET
 #include <wallet/wallet.h>
 #endif
@@ -193,6 +194,7 @@ void OptionsModel::Init(bool resetSettings)
 
     // rwconf settings that require a restart
     f_peerbloomfilters = gArgs.GetBoolArg("-peerbloomfilters", DEFAULT_PEERBLOOMFILTERS);
+    f_rejectspkreuse = (SpkReuseMode != SRM_ALLOW);
 
     // Display
     if (!settings.contains("language"))
@@ -385,6 +387,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return qlonglong(gArgs.GetArg("-mempoolexpiry", DEFAULT_MEMPOOL_EXPIRY));
         case rejectunknownscripts:
             return fRequireStandard;
+        case rejectspkreuse:
+            return f_rejectspkreuse;
         case minrelaytxfee:
             return qlonglong(::minRelayTxFee.GetFeePerK());
         case bytespersigop:
@@ -718,6 +722,16 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 fRequireStandard = fNewValue;
                 // This option is inverted in the config:
                 gArgs.ModifyRWConfigFile("acceptnonstdtxn", strprintf("%d", ! fNewValue));
+            }
+            break;
+        }
+        case rejectspkreuse:
+        {
+            const bool fNewValue = value.toBool();
+            if (f_rejectspkreuse != fNewValue) {
+                gArgs.ModifyRWConfigFile("spkreuse", fNewValue ? "conflict" : "allow");
+                f_rejectspkreuse = fNewValue;
+                setRestartRequired(true);
             }
             break;
         }
