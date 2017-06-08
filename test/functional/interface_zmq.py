@@ -26,10 +26,12 @@ class ZMQSubscriber:
         import zmq
         self.socket.setsockopt(zmq.SUBSCRIBE, self.topic)
 
-    def receive(self):
+    def receive(self, specific_topic = None):
+        expected_topic = specific_topic if specific_topic else self.topic
+
         topic, body, seq = self.socket.recv_multipart()
         # Topic should match the subscriber topic.
-        assert_equal(topic, self.topic)
+        assert_equal(topic, expected_topic)
         # Sequence should be incremental.
         assert_equal(struct.unpack('<I', seq)[-1], self.sequence)
         self.sequence += 1
@@ -62,9 +64,12 @@ class ZMQTest (BitcoinTestFramework):
         self.hashtx = ZMQSubscriber(socket, b"hashtx")
         self.rawblock = ZMQSubscriber(socket, b"rawblock")
         self.rawtx = ZMQSubscriber(socket, b"rawtx")
+        if self.is_wallet_compiled():
+            self.hashwallettx = ZMQSubscriber(socket, b"hashwallettx")
+            self.rawwallettx = ZMQSubscriber(socket, b"rawwallettx")
 
         self.extra_args = [
-            ["-zmqpub%s=%s" % (sub.topic.decode(), ADDRESS) for sub in [self.hashblock, self.hashtx, self.rawblock, self.rawtx]],
+            ["-zmqpub%s=%s" % (sub.topic.decode(), ADDRESS) for sub in [self.hashblock, self.hashtx, self.rawblock, self.rawtx, getattr(self, 'hashwallettx', None), getattr(self, 'rawwallettx', None)] if not sub is None],
             [],
         ]
         self.add_nodes(self.num_nodes, self.extra_args)
@@ -80,9 +85,26 @@ class ZMQTest (BitcoinTestFramework):
             self.zmq_context.destroy(linger=None)
 
     def _zmq_test(self):
+        import zmq
+
+        if self.is_wallet_compiled():
+            self.sync_all()
+            # Flush initial wallettx events before we begin
+            while True:
+                try:
+                    topic, body, seq = self.hashwallettx.socket.recv_multipart()
+                except zmq.ZMQError:
+                    break
+                subscriber = {b'hashwallettx-block': self.hashwallettx, b'rawwallettx-block': self.rawwallettx}[topic]
+                assert_equal(struct.unpack('<I', seq)[-1], subscriber.sequence)
+                subscriber.sequence += 1
+
         num_blocks = 5
         self.log.info("Generate %(n)d blocks (and %(n)d coinbase txes)" % {"n": num_blocks})
-        genhashes = self.nodes[0].generatetoaddress(num_blocks, ADDRESS_BCRT1_UNSPENDABLE)
+        if self.is_wallet_compiled():
+            genhashes = self.nodes[0].generate(num_blocks)
+        else:
+            genhashes = self.nodes[0].generatetoaddress(num_blocks, ADDRESS_BCRT1_UNSPENDABLE)
         self.sync_all()
 
         for x in range(num_blocks):
@@ -95,6 +117,15 @@ class ZMQTest (BitcoinTestFramework):
             tx.deserialize(BytesIO(hex))
             tx.calc_sha256()
             assert_equal(tx.hash, bytes_to_hex_str(txid))
+
+            if self.is_wallet_compiled():
+                # Should receive wallet tx
+                wallettxid = self.hashwallettx.receive(b"hashwallettx-block")
+                wallethex = self.rawwallettx.receive(b"rawwallettx-block")
+                wallettx = CTransaction()
+                wallettx.deserialize(BytesIO(wallethex))
+                wallettx.calc_sha256()
+                assert_equal(wallettx.hash, bytes_to_hex_str(wallettxid))
 
             # Should receive the generated block hash.
             hash = bytes_to_hex_str(self.hashblock.receive())
@@ -119,13 +150,20 @@ class ZMQTest (BitcoinTestFramework):
             hex = self.rawtx.receive()
             assert_equal(payment_txid, bytes_to_hex_str(hash256(hex)))
 
+        if self.is_wallet_compiled():
+            wallettxid = self.hashwallettx.receive(b"hashwallettx-mempool")
+            wallethex = self.rawwallettx.receive(b"rawwallettx-mempool")
+            assert_equal(hash256(wallethex), wallettxid)
+
 
         self.log.info("Test the getzmqnotifications RPC")
         assert_equal(self.nodes[0].getzmqnotifications(), [
             {"type": "pubhashblock", "address": ADDRESS, "hwm": 1000},
             {"type": "pubhashtx", "address": ADDRESS, "hwm": 1000},
+            ] + ([{"type": "pubhashwallettx", "address": ADDRESS, "hwm": 1000}] if self.is_wallet_compiled() else []) + [
             {"type": "pubrawblock", "address": ADDRESS, "hwm": 1000},
             {"type": "pubrawtx", "address": ADDRESS, "hwm": 1000},
+            ] + ([{"type": "pubrawwallettx", "address": ADDRESS, "hwm": 1000}] if self.is_wallet_compiled() else []) + [
         ])
 
         assert_equal(self.nodes[1].getzmqnotifications(), [])
