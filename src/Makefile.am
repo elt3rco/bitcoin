@@ -664,7 +664,8 @@ endif
 
 RES_RENDERED_ICON_SRC = \
   qt/res/src/chart.svg \
-  qt/res/src/bitcoin.svg
+  qt/res/src/bitcoin.svg \
+  qt/res/src/nsis-header.svg
 
 RES_RENDERED_ICONS = \
   qt/res/rendered_icons/chart.png \
@@ -713,6 +714,9 @@ qt/res/rendered_icons/bitcoin_testnet.ico: qt/res/rendered_icons/bitcoin.ico
 
 qt/res/rendered_icons/nsis-wizard.bmp: qt/res/rendered_icons/bitcoin290.png
 	$(IMAGEMAGICK_CONVERT) $^ -crop 164x290+62+0 -border 0x12 -strip BMP3:$@
+
+qt/res/rendered_icons/nsis-header.bmp: qt/res/src/nsis-header.svg
+	sed 's/PACKAGE_NAME/$(PACKAGE_NAME)/' < "$<" | $(RSVG_CONVERT) -f png -d 57 -p 57 | $(IMAGEMAGICK_CONVERT) - -background white -alpha remove BMP3:$@
 
 endif
 

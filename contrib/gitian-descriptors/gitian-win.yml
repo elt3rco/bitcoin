@@ -17,6 +17,7 @@ packages:
 - "libtool"
 - "automake"
 - "faketime"
+- "fonts-tuffy"
 - "bsdmainutils"
 - "mingw-w64"
 - "g++-mingw-w64"

@@ -527,6 +527,9 @@ case $host in
      archive_cmds_CXX="\$CC -shared \$libobjs \$deplibs \$compiler_flags -static -o \$output_objdir/\$soname \${wl}--enable-auto-image-base -Xlinker --out-implib -Xlinker \$lib"
      postdeps_CXX=
 
+     AC_PATH_PROGS([RSVG_CONVERT], [rsvg-convert rsvg],rsvg-convert)
+     AC_PATH_PROGS([IMAGEMAGICK_CONVERT], [convert],convert)
+
      ;;
   *darwin*)
      if test x$PNG2ICNS = xno; then
