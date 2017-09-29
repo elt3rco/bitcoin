@@ -351,6 +351,25 @@ class WalletTest(BitcoinTestFramework):
         # This will raise an exception for importing an invalid pubkey
         assert_raises_rpc_error(-5, "Pubkey is not a valid public key", self.nodes[0].importpubkey, "5361746f736869204e616b616d6f746f")
 
+        # send with explicit fee
+        self.sync_all([self.nodes[0:3]])
+        self.log.info("test explicit fee (sendtoaddress)")
+        self.nodes[0].generate(1)
+        prebalance = self.nodes[2].getbalance()
+        assert prebalance > 2
+        txid = self.nodes[2].sendtoaddress(
+            address=self.nodes[1].getnewaddress(),
+            amount=1.0,
+            conf_target=0.00002500,
+            estimate_mode='EXPLICIT',
+        )
+        tx_size = self.get_vsize(self.nodes[2].gettransaction(txid)['hex'])
+        self.sync_all([self.nodes[0:3]])
+        self.nodes[0].generate(1)
+        postbalance = self.nodes[2].getbalance()
+        fee = prebalance - postbalance - Decimal('1')
+        assert_fee_amount(fee, tx_size, Decimal('0.00002500'))
+
         # Import address and private key to check correct behavior of spendable unspents
         # 1. Send some coins to generate new UTXO
         address_to_import = self.nodes[2].getnewaddress()
