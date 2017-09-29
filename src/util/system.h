@@ -157,6 +157,7 @@ protected:
 
 private:
     fs::path rwconf_path;
+    std::map<std::string, std::string> rwconf_queued_writes;
 
 public:
     ArgsManager();

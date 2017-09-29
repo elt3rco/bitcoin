@@ -998,6 +998,10 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
             return false;
         }
     }
+    if (!rwconf_queued_writes.empty()) {
+        ModifyRWConfigFile(rwconf_queued_writes);
+        rwconf_queued_writes.clear();
+    }
 
     return true;
 }
@@ -1181,7 +1185,13 @@ void ModifyRWConfigStream(std::istream& stream_in, std::ostream& stream_out, con
 
 void ArgsManager::ModifyRWConfigFile(const std::map<std::string, std::string>& settings_to_change)
 {
-    assert(!rwconf_path.empty());
+    if (rwconf_path.empty()) {
+        // Queue the change for after rwconf is loaded
+        for (auto& it : settings_to_change) {
+            rwconf_queued_writes[it.first] = it.second;
+        }
+        return;
+    }
     fs::path rwconf_new_path = rwconf_path;
     rwconf_new_path += ".new";
     const std::string new_path_str = rwconf_new_path.string();
