@@ -23,6 +23,7 @@
 #include <interfaces/chain.h>
 #include <index/txindex.h>
 #include <key.h>
+#include <keystore.h>
 #include <validation.h>
 #include <miner.h>
 #include <netbase.h>
