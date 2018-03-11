@@ -622,7 +622,6 @@ public:
 
     /** Affect CreateNewBlock prioritisation of transactions */
     void PrioritiseTransaction(const uint256& hash, double dPriorityDelta, const CAmount& nFeeDelta);
-    void PrioritiseTransaction(const uint256& hash, const CAmount& nFeeDelta) { PrioritiseTransaction(hash, 0., nFeeDelta); }
     void ApplyDeltas(const uint256 hash, double &dPriorityDelta, CAmount &nFeeDelta) const;
     void ClearPrioritisation(const uint256 hash);
 
