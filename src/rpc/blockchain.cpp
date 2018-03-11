@@ -383,6 +383,8 @@ static std::string EntryDescriptionString()
            "    \"modifiedfee\" : n,      (numeric) transaction fee with fee deltas used for mining priority (DEPRECATED)\n"
            "    \"time\" : n,             (numeric) local time transaction entered pool in seconds since 1 Jan 1970 GMT\n"
            "    \"height\" : n,           (numeric) block height when transaction entered pool\n"
+           "    \"startingpriority\" : n, (numeric) Priority when transaction entered pool\n"
+           "    \"currentpriority\" : n,  (numeric) Transaction priority now\n"
            "    \"descendantcount\" : n,  (numeric) number of in-mempool descendant transactions (including this one)\n"
            "    \"descendantsize\" : n,   (numeric) virtual transaction size of in-mempool descendants (including this one)\n"
            "    \"descendantfees\" : n,   (numeric) modified fees (see above) of in-mempool descendants (including this one) (DEPRECATED)\n"
@@ -421,6 +423,8 @@ static void entryToJSON(UniValue &info, const CTxMemPoolEntry &e) EXCLUSIVE_LOCK
     info.pushKV("modifiedfee", ValueFromAmount(e.GetModifiedFee()));
     info.pushKV("time", e.GetTime());
     info.pushKV("height", (int)e.GetHeight());
+    info.pushKV("startingpriority", e.GetStartingPriority());
+    info.pushKV("currentpriority", e.GetPriority(chainActive.Height() + 1));
     info.pushKV("descendantcount", e.GetCountWithDescendants());
     info.pushKV("descendantsize", e.GetSizeWithDescendants());
     info.pushKV("descendantfees", e.GetModFeesWithDescendants());
