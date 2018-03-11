@@ -571,7 +571,7 @@ private:
 
 public:
     indirectmap<COutPoint, const CTransaction*> mapNextTx GUARDED_BY(cs);
-    std::map<uint256, CAmount> mapDeltas;
+    std::map<uint256, std::pair<double, CAmount> > mapDeltas;
 
     /** Create a new CTxMemPool.
      */
@@ -621,8 +621,9 @@ public:
     void UpdateDependentPriorities(const CTransaction &tx, unsigned int nBlockHeight, bool addToChain);
 
     /** Affect CreateNewBlock prioritisation of transactions */
-    void PrioritiseTransaction(const uint256& hash, const CAmount& nFeeDelta);
-    void ApplyDelta(const uint256 hash, CAmount &nFeeDelta) const;
+    void PrioritiseTransaction(const uint256& hash, double dPriorityDelta, const CAmount& nFeeDelta);
+    void PrioritiseTransaction(const uint256& hash, const CAmount& nFeeDelta) { PrioritiseTransaction(hash, 0., nFeeDelta); }
+    void ApplyDeltas(const uint256 hash, double &dPriorityDelta, CAmount &nFeeDelta) const;
     void ClearPrioritisation(const uint256 hash);
 
     /** Get the transaction in the pool that spends the same prevout */

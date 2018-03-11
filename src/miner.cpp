@@ -274,7 +274,7 @@ void BlockAssembler::AddToBlock(CTxMemPool::txiter iter)
     if (fPrintPriority) {
         double dPriority = iter->GetPriority(nHeight);
         CAmount dummy;
-        mempool.ApplyDelta(iter->GetTx().GetHash(), dummy);
+        mempool.ApplyDeltas(iter->GetTx().GetHash(), dPriority, dummy);
         LogPrintf("priority %.1f fee %s txid %s\n",
                   dPriority,
                   CFeeRate(iter->GetModifiedFee(), iter->GetTxSize()).ToString(),
