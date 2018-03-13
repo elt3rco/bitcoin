@@ -17,8 +17,12 @@
 #include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
 #include <net.h>
 #include <netbase.h>
+#include <outputtype.h>
 #include <txdb.h> // for -dbcache defaults
 #include <qt/intro.h>
+#ifdef ENABLE_WALLET
+#include <wallet/wallet.h>
+#endif
 
 #include <QNetworkProxy>
 #include <QSettings>
@@ -297,6 +301,14 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
 #ifdef ENABLE_WALLET
         case SpendZeroConfChange:
             return settings.value("bSpendZeroConfChange");
+        case addresstype:
+        {
+            OutputType default_address_type;
+            if (!ParseOutputType(gArgs.GetArg("-addresstype", ""), default_address_type)) {
+                default_address_type = DEFAULT_ADDRESS_TYPE;
+            }
+            return QString::fromStdString(FormatOutputType(default_address_type));
+        }
 #endif
         case DisplayUnit:
             return nDisplayUnit;
@@ -428,6 +440,22 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
                 setRestartRequired(true);
             }
             break;
+        case addresstype:
+        {
+            const std::string newvalue_str = value.toString().toStdString();
+            OutputType oldvalue, newvalue;
+            if (!ParseOutputType(gArgs.GetArg("-addresstype", ""), oldvalue)) {
+                oldvalue = DEFAULT_ADDRESS_TYPE;
+            }
+            if (ParseOutputType(newvalue_str, newvalue) && newvalue != oldvalue) {
+                gArgs.ModifyRWConfigFile("addresstype", newvalue_str);
+                gArgs.ForceSetArg("-addresstype", newvalue_str);
+                for (auto& wallet : GetWallets()) {
+                    wallet->m_default_address_type = newvalue;
+                }
+            }
+            break;
+        }
 #endif
         case DisplayUnit:
             setDisplayUnit(value);
