@@ -94,7 +94,7 @@ bool IsStandardTx(const CTransaction& tx, std::string& reason, const ignore_reje
      * @param[in] mapInputs    Map of previous transactions that have outputs we're spending
      * @return True if all inputs (scriptSigs) use only standard transaction forms
      */
-bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs, const std::string& reason_prefix, std::string& out_reason);
+bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs, const std::string& reason_prefix, std::string& out_reason, const ignore_rejects_type& ignore_rejects=empty_ignore_rejects);
 
 inline bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs) {
     std::string reason;

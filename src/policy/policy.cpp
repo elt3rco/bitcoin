@@ -177,7 +177,7 @@ bool IsStandardTx(const CTransaction& tx, std::string& out_reason, const ignore_
  * expensive-to-check-upon-redemption script like:
  *   DUP CHECKSIG DROP ... repeated 100 times... OP_1
  */
-bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs, const std::string& reason_prefix, std::string& out_reason)
+bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs, const std::string& reason_prefix, std::string& out_reason, const ignore_rejects_type& ignore_rejects)
 {
     if (tx.IsCoinBase())
         return true; // Coinbases don't use vin normally
@@ -189,25 +189,32 @@ bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs,
         std::vector<std::vector<unsigned char> > vSolutions;
         txnouttype whichType = Solver(prev.scriptPubKey, vSolutions);
         if (whichType == TX_NONSTANDARD) {
-            out_reason = reason_prefix + "script-unknown";
-            return false;
-        } else if (whichType == TX_SCRIPTHASH) {
+            MaybeReject("script-unknown");
+        }
+        if (whichType == TX_SCRIPTHASH) {
+            if (!tx.vin[i].scriptSig.IsPushOnly()) {
+                // The only way we got this far, is if the user ignored scriptsig-not-pushonly.
+                // However, this case is invalid, and will be caught later on.
+                // But for now, we don't want to run the [possibly expensive] script here.
+                continue;
+            }
             std::vector<std::vector<unsigned char> > stack;
             // convert the scriptSig into a stack, so we can inspect the redeemScript
             if (!EvalScript(stack, tx.vin[i].scriptSig, SCRIPT_VERIFY_NONE, BaseSignatureChecker(), SigVersion::BASE))
             {
+                // This case is also invalid or a bug
                 out_reason = reason_prefix + "scriptsig-failure";
                 return false;
             }
             if (stack.empty())
             {
+                // Also invalid
                 out_reason = reason_prefix + "scriptcheck-missing";
                 return false;
             }
             CScript subscript(stack.back().begin(), stack.back().end());
             if (subscript.GetSigOpCount(true) > MAX_P2SH_SIGOPS) {
-                out_reason = reason_prefix + "scriptcheck-sigops";
-                return false;
+                MaybeReject("scriptcheck-sigops");
             }
         }
     }

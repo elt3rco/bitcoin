@@ -721,7 +721,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         }
 
         // Check for non-standard pay-to-script-hash in inputs
-        if (fRequireStandard && !AreInputsStandard(tx, view, "bad-txns-input-", reason)) {
+        if (fRequireStandard && !AreInputsStandard(tx, view, "bad-txns-input-", reason, ignore_rejects)) {
             return state.Invalid(false, REJECT_NONSTANDARD, reason);
         }
 
