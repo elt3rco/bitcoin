@@ -124,7 +124,7 @@ static const unsigned int DEFAULT_BANSCORE_THRESHOLD = 100;
 static const bool DEFAULT_PERSIST_MEMPOOL = true;
 /** Default for -mempoolreplacement */
 static const bool DEFAULT_ENABLE_REPLACEMENT = true;
-static const bool DEFAULT_REPLACEMENT_HONOUR_OPTOUT = true;
+static const bool DEFAULT_REPLACEMENT_HONOUR_OPTOUT = false;
 /** Default for using fee filter */
 static const bool DEFAULT_FEEFILTER = true;
 
