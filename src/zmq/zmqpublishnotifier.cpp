@@ -94,8 +94,6 @@ bool CZMQAbstractPublishNotifier::Initialize(void *pcontext)
         rc = zmq_setsockopt(psocket, ZMQ_TCP_KEEPALIVE, &so_keepalive_option, sizeof(so_keepalive_option));
         if (rc != 0) {
             zmqError("Failed to set SO_KEEPALIVE");
-            zmq_close(psocket);
-            return false;
         }
 
         rc = zmq_bind(psocket, address.c_str());
