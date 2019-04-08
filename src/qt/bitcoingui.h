@@ -38,6 +38,7 @@ class WalletFrame;
 class WalletModel;
 class HelpMessageDialog;
 class ModalOverlay;
+class MempoolStats;
 
 namespace interfaces {
 class Handler;
@@ -148,6 +149,7 @@ private:
     QAction* openRPCConsoleAction = nullptr;
     QAction* openAction = nullptr;
     QAction* showHelpMessageAction = nullptr;
+    QAction* showMempoolStatsAction = nullptr;
     QAction* m_open_wallet_action{nullptr};
     QAction* m_close_wallet_action{nullptr};
     QAction* m_wallet_selector_label_action = nullptr;
@@ -162,6 +164,7 @@ private:
     RPCConsole* rpcConsole = nullptr;
     HelpMessageDialog* helpMessageDialog = nullptr;
     ModalOverlay* modalOverlay = nullptr;
+    MempoolStats* mempoolStats = nullptr;
 #ifdef Q_OS_WIN
     QWinTaskbarButton* m_taskbar_button = nullptr;
 #endif
@@ -286,6 +289,8 @@ public Q_SLOTS:
     void showDebugWindowActivateConsole();
     /** Show help message dialog */
     void showHelpMessageClicked();
+    /** Show mempool stats window */
+    void showMempoolStatsWindow();
 #ifndef Q_OS_MAC
     /** Handle tray icon clicked */
     void trayIconActivated(QSystemTrayIcon::ActivationReason reason);

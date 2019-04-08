@@ -31,6 +31,7 @@
 #include <interfaces/node.h>
 #include <noui.h>
 #include <rpc/server.h>
+#include <stats/stats.h>
 #include <ui_interface.h>
 #include <uint256.h>
 #include <util/system.h>
@@ -560,6 +561,9 @@ int GuiMain(int argc, char* argv[])
     app.parameterSetup();
     // Load GUI settings from QSettings
     app.createOptionsModel(gArgs.GetBoolArg("-resetguisettings", false));
+
+    // Enable mempool stats by default
+    gArgs.SoftSetBoolArg("-statsenable", true);
 
     if (gArgs.GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !gArgs.GetBoolArg("-min", false))
         app.createSplashScreen(networkStyle.data());
