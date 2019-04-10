@@ -7,6 +7,7 @@
 
 #include <attributes.h>
 #include <primitives/transaction.h>
+#include <policy/policy.h>
 #include <uint256.h>
 
 enum class TransactionError {
@@ -32,6 +33,6 @@ std::string TransactionErrorString(const TransactionError error);
  * @param[in]  highfee Reject txs with fees higher than this (if 0, accept any fee)
  * return error
  */
-NODISCARD TransactionError BroadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, const CAmount& highfee);
+NODISCARD TransactionError BroadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, const CAmount& highfee, const ignore_rejects_type& ignore_rejects=empty_ignore_rejects);
 
 #endif // BITCOIN_NODE_TRANSACTION_H
