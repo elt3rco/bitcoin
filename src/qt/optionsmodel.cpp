@@ -94,6 +94,14 @@ void OptionsModel::Init(bool resetSettings)
     // by command-line and show this in the UI.
 
     // Main
+    if (Intro::c_just_set_pruning) {
+        // Set QSettings for Core
+        qlonglong prune_val = gArgs.GetArg("-prune", 0);
+        settings.setValue("bPrune", (prune_val > 1));
+        if (prune_val > 1) {
+            settings.setValue("nPruneSize", ((prune_val * 1024 * 1024) + GB_BYTES - 1) / GB_BYTES);
+        }
+    }
     if (!gArgs.IsArgSet("-prune")) {
         if (settings.contains("bPrune")) {
             if (settings.value("bPrune").toBool()) {
@@ -491,7 +499,9 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             if (gArgs.GetArg("-prune", 0) != llvalue) {
                 gArgs.ModifyRWConfigFile("prune", value.toString().toStdString());
                 settings.setValue("bPrune", (llvalue > 1));
-                settings.setValue("nPruneSize", ((llvalue * 1024 * 1024) + GB_BYTES - 1) / GB_BYTES);
+                if (llvalue > 1) {
+                    settings.setValue("nPruneSize", ((llvalue * 1024 * 1024) + GB_BYTES - 1) / GB_BYTES);
+                }
                 setRestartRequired(true);
             }
             break;

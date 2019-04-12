@@ -132,9 +132,8 @@ Intro::Intro(QWidget *parent, uint64_t blockchain_size, uint64_t chain_state_siz
     );
     ui->lblExplanation2->setText(ui->lblExplanation2->text().arg(tr(PACKAGE_NAME)));
 
-    int minPruneTarget = std::ceil(MIN_DISK_SPACE_FOR_BLOCK_FILES / 1024.0 / 1024.0);
-    ui->pruneMiB->setMinimum(minPruneTarget);
-    ui->pruneMiB->setMaximum(std::numeric_limits<int>::max());
+    const int minPruneTarget = std::ceil(MIN_DISK_SPACE_FOR_BLOCK_FILES / 1024.0 / 1024.0);
+    ui->pruneMiB->setRange(minPruneTarget, std::numeric_limits<int>::max());
 
     int64_t pruneTarget = gArgs.GetArg("-prune", 0);
     if (pruneTarget > 1) {
@@ -143,6 +142,12 @@ Intro::Intro(QWidget *parent, uint64_t blockchain_size, uint64_t chain_state_siz
     } else {
         ui->chkPrune->setChecked(false);
         ui->pruneMiB->setValue(minPruneTarget);
+
+        if (pruneTarget == 1) {
+            // Manual pruning
+            ui->chkPrune->setTristate();
+            ui->chkPrune->setCheckState(Qt::PartiallyChecked);
+        }
     }
     connect(ui->chkPrune, SIGNAL(stateChanged(int)), this, SLOT(UpdateText()));
     connect(ui->pruneMiB, SIGNAL(valueChanged(int)), this, SLOT(UpdateText()));
@@ -214,9 +219,12 @@ void Intro::setDataDirectory(const QString &dataDir)
 
 uint64_t Intro::getPrune()
 {
-    if (ui->chkPrune->isChecked()) {
+    switch (ui->chkPrune->checkState()) {
+    case Qt::Checked:
         return ui->pruneMiB->value();
-    } else {
+    case Qt::PartiallyChecked:
+        return 1;
+    case Qt::Unchecked: default:
         return 0;
     }
 }
@@ -225,6 +233,8 @@ QString Intro::getDefaultDataDirectory()
 {
     return GUIUtil::boostPathToQString(GetDefaultDataDir());
 }
+
+bool Intro::c_just_set_pruning{false};
 
 bool Intro::pickDataDirectory(interfaces::Node& node)
 {
@@ -285,6 +295,9 @@ bool Intro::pickDataDirectory(interfaces::Node& node)
             gArgs.ForceSetArg("-prune", strPrune);
             gArgs.ModifyRWConfigFile("prune", strPrune);
         }
+
+        // Even if we don't need to set anything in rwconf, we still want to ensure QSettings are updated later
+        c_just_set_pruning = true;
     }
     /* Only override -datadir if different from the default, to make it possible to
      * override -datadir in the bitcoin.conf file in the default data directory

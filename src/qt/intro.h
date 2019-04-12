@@ -48,6 +48,7 @@ public:
      * will cause the wrong path to be cached.
      */
     static bool pickDataDirectory(interfaces::Node& node);
+    static bool c_just_set_pruning;
 
     /**
      * Determine default data directory for operating system.

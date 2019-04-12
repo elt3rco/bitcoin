@@ -1015,6 +1015,9 @@ bool ArgsManager::ReadConfigFiles(std::string& error, bool ignore_invalid_keys)
         }
     }
     if (!rwconf_queued_writes.empty()) {
+        if (rwconf_queued_writes.count("-prune")) {
+            rwconf_had_prune_option = true;
+        }
         ModifyRWConfigFile(rwconf_queued_writes);
         rwconf_queued_writes.clear();
     }
