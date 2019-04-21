@@ -54,6 +54,7 @@ class MiningTest(BitcoinTestFramework):
         assert_equal(mining_info['blocks'], 200)
         assert_equal(mining_info['currentblocktx'], 0)
         assert_equal(mining_info['currentblockweight'], 4000)
+        assert 'currentblocksize' not in mining_info
         self.restart_node(0)
         connect_nodes_bi(self.nodes, 0, 1)
 
@@ -73,6 +74,7 @@ class MiningTest(BitcoinTestFramework):
         assert_equal(mining_info['chain'], 'regtest')
         assert 'currentblocktx' not in mining_info
         assert 'currentblockweight' not in mining_info
+        assert 'currentblocksize' not in mining_info
         assert_equal(mining_info['difficulty'], Decimal('4.656542373906925E-10'))
         assert_equal(mining_info['networkhashps'], Decimal('0.003333333333333334'))
         assert_equal(mining_info['pooledtx'], 0)
