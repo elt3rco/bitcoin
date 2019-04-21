@@ -28,6 +28,7 @@
 #include <script/standard.h>
 #include <uint256.h>
 #include <util/bip32.h>
+#include <util/moneystr.h>
 #include <util/strencodings.h>
 #include <validation.h>
 #include <validationinterface.h>
@@ -1032,13 +1033,14 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 
 static UniValue sendrawtransaction(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
             RPCHelpMan{"sendrawtransaction",
                 "\nSubmits raw transaction (serialized, hex-encoded) to local node and network.\n"
                 "\nAlso see createrawtransaction and signrawtransactionwithkey calls.\n",
                 {
                     {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The hex string of the raw transaction"},
+                    {"maxfeerate", RPCArg::Type::AMOUNT, /* default */ FormatMoney(maxTxFee), "Reject transactions whose fee rate is higher than the specified value, expressed in " + CURRENCY_UNIT + "/kB\n"},
                     {"ignore_reject", RPCArg::Type::ARR, /* default */ "[]", "Rejection conditions to ignore, eg 'absurdly-high-fee'"},
                 },
                 RPCResult{
@@ -1056,7 +1058,11 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
                 },
             }.ToString());
 
-    RPCTypeCheck(request.params, {UniValue::VSTR});
+    RPCTypeCheck(request.params, {
+        UniValue::VSTR,
+        UniValueType(), // NUM or BOOL, checked later
+        UniValue::VARR,
+    });
 
     // parse hex string from parameter
     CMutableTransaction mtx;
@@ -1064,25 +1070,32 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     CTransactionRef tx(MakeTransactionRef(std::move(mtx)));
 
-    ignore_rejects_type ignore_rejects;
-    const UniValue& json_ign_rejs = request.params[1];
-    if (!json_ign_rejs.isNull()) {
-        if (json_ign_rejs.isBool()) {
-            // This parameter used to be boolean allowhighfees
-            if (json_ign_rejs.isTrue()) {
-                ignore_rejects.insert(rejectmsg_absurdfee);
-            }
-        } else {
-            RPCTypeCheckArgument(json_ign_rejs, UniValue::VARR);
+    const UniValue* json_ign_rejs = &request.params[2];
 
-            for (size_t i = 0; i < json_ign_rejs.size(); ++i) {
-                const UniValue& json_ign_rej = json_ign_rejs[i];
-                ignore_rejects.insert(json_ign_rej.get_str());
-            }
+    CAmount highfee = maxTxFee;
+    // TODO: temporary migration code for old clients. Remove in v0.20
+    if (request.params[1].isBool()) {
+        if (request.params[1].get_bool()) highfee = 0;
+    } else if (request.params[1].isArray() && request.params[2].isNull()) {
+        // ignore_reject used to occupy this position
+        json_ign_rejs = &request.params[1];
+    } else if (!request.params[1].isNull()) {
+        size_t weight = GetTransactionWeight(*tx);
+        CFeeRate fr(AmountFromValue(request.params[1]));
+        // the +3/4 part rounds the value up, and is the same formula used when
+        // calculating the fee for a transaction
+        // (see GetVirtualTransactionSize)
+        highfee = fr.GetFee((weight+3)/4);
+    }
+
+    ignore_rejects_type ignore_rejects;
+    if (!json_ign_rejs->isNull()) {
+        for (size_t i = 0; i < json_ign_rejs->size(); ++i) {
+            const UniValue& json_ign_rej = (*json_ign_rejs)[i];
+            ignore_rejects.insert(json_ign_rej.get_str());
         }
     }
 
-    const CAmount highfee{::maxTxFee};
     uint256 txid;
     std::string err_string;
     const TransactionError err = BroadcastTransaction(tx, txid, err_string, highfee, ignore_rejects);
@@ -1108,7 +1121,7 @@ static UniValue testmempoolaccept(const JSONRPCRequest& request)
                             {"rawtx", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, ""},
                         },
                         },
-                    {"allowhighfees", RPCArg::Type::BOOL, /* default */ "false", "Allow high fees"},
+                    {"maxfeerate", RPCArg::Type::AMOUNT, /* default */ FormatMoney(maxTxFee), "Reject transactions whose fee rate is higher than the specified value, expressed in " + CURRENCY_UNIT + "/kB\n"},
                 },
                 RPCResult{
             "[                   (array) The result of the mempool acceptance test for each raw transaction in the input array.\n"
@@ -1133,7 +1146,11 @@ static UniValue testmempoolaccept(const JSONRPCRequest& request)
             }.ToString());
     }
 
-    RPCTypeCheck(request.params, {UniValue::VARR, UniValue::VBOOL});
+    RPCTypeCheck(request.params, {
+        UniValue::VARR,
+        UniValueType(), // NUM or BOOL, checked later
+    });
+
     if (request.params[0].get_array().size() != 1) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Array must contain exactly one raw transaction for now");
     }
@@ -1146,8 +1163,16 @@ static UniValue testmempoolaccept(const JSONRPCRequest& request)
     const uint256& tx_hash = tx->GetHash();
 
     CAmount max_raw_tx_fee = ::maxTxFee;
-    if (!request.params[1].isNull() && request.params[1].get_bool()) {
-        max_raw_tx_fee = 0;
+    // TODO: temporary migration code for old clients. Remove in v0.20
+    if (request.params[1].isBool()) {
+        if (request.params[1].get_bool()) max_raw_tx_fee = 0;
+    } else if (!request.params[1].isNull()) {
+        size_t weight = GetTransactionWeight(*tx);
+        CFeeRate fr(AmountFromValue(request.params[1]));
+        // the +3/4 part rounds the value up, and is the same formula used when
+        // calculating the fee for a transaction
+        // (see GetVirtualTransactionSize)
+        max_raw_tx_fee = fr.GetFee((weight+3)/4);
     }
 
     UniValue result(UniValue::VARR);
@@ -2064,11 +2089,11 @@ static const CRPCCommand commands[] =
     { "rawtransactions",    "createrawtransaction",         &createrawtransaction,      {"inputs","outputs","locktime","replaceable"} },
     { "rawtransactions",    "decoderawtransaction",         &decoderawtransaction,      {"hexstring","iswitness"} },
     { "rawtransactions",    "decodescript",                 &decodescript,              {"hexstring"} },
-    { "rawtransactions",    "sendrawtransaction",           &sendrawtransaction,        {"hexstring","ignore_rejects|allowhighfees"} },
+    { "rawtransactions",    "sendrawtransaction",           &sendrawtransaction,        {"hexstring","allowhighfees|maxfeerate","ignore_rejects"} },
     { "rawtransactions",    "combinerawtransaction",        &combinerawtransaction,     {"txs"} },
     { "hidden",             "signrawtransaction",           &signrawtransaction,        {"hexstring","prevtxs","privkeys","sighashtype"} },
     { "rawtransactions",    "signrawtransactionwithkey",    &signrawtransactionwithkey, {"hexstring","privkeys","prevtxs","sighashtype"} },
-    { "rawtransactions",    "testmempoolaccept",            &testmempoolaccept,         {"rawtxs","allowhighfees"} },
+    { "rawtransactions",    "testmempoolaccept",            &testmempoolaccept,         {"rawtxs","allowhighfees|maxfeerate"} },
     { "rawtransactions",    "decodepsbt",                   &decodepsbt,                {"psbt"} },
     { "rawtransactions",    "combinepsbt",                  &combinepsbt,               {"txs"} },
     { "rawtransactions",    "finalizepsbt",                 &finalizepsbt,              {"psbt", "extract"} },
