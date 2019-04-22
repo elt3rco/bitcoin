@@ -3236,6 +3236,7 @@ void FundTransaction(CWallet* const pwallet, CMutableTransaction& tx, CAmount& f
                 {"subtractFeeFromOutputs", UniValueType(UniValue::VARR)},
                 {"replaceable", UniValueType(UniValue::VBOOL)},
                 {"conf_target", UniValueType(UniValue::VNUM)},
+                {"min_conf", UniValueType(UniValue::VNUM)},
                 {"estimate_mode", UniValueType(UniValue::VSTR)},
             },
             true, true);
@@ -3286,6 +3287,9 @@ void FundTransaction(CWallet* const pwallet, CMutableTransaction& tx, CAmount& f
                 throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot specify both conf_target and feeRate");
             }
             coinControl.m_confirm_target = ParseConfirmTarget(options["conf_target"]);
+        }
+        if (options.exists("min_conf")) {
+            coinControl.m_min_depth = options["min_conf"].get_int();
         }
         if (options.exists("estimate_mode")) {
             if (options.exists("feeRate")) {
@@ -3366,6 +3370,7 @@ static UniValue fundrawtransaction(const JSONRPCRequest& request)
                             {"replaceable", RPCArg::Type::BOOL, /* default */ "fallback to wallet's default", "Marks this transaction as BIP125 replaceable.\n"
                             "                              Allows this transaction to be replaced by a transaction with higher fees"},
                             {"conf_target", RPCArg::Type::NUM, /* default */ "fallback to wallet's default", "Confirmation target (in blocks)"},
+                            {"min_conf", RPCArg::Type::NUM, /* default */ "0", "The minimum confirmations to filter"},
                             {"estimate_mode", RPCArg::Type::STR, /* default */ "UNSET", "The fee estimate mode, must be one of:\n"
                             "         \"UNSET\"\n"
                             "         \"ECONOMICAL\"\n"
@@ -4379,6 +4384,7 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
                             {"replaceable", RPCArg::Type::BOOL, /* default */ "false", "Marks this transaction as BIP125 replaceable.\n"
                             "                              Allows this transaction to be replaced by a transaction with higher fees"},
                             {"conf_target", RPCArg::Type::NUM, /* default */ "Fallback to wallet's confirmation target", "Confirmation target (in blocks)"},
+                            {"min_conf", RPCArg::Type::NUM, /* default */ "0", "The minimum confirmations to filter"},
                             {"estimate_mode", RPCArg::Type::STR, /* default */ "UNSET", "The fee estimate mode, must be one of:\n"
                             "         \"UNSET\"\n"
                             "         \"ECONOMICAL\"\n"
