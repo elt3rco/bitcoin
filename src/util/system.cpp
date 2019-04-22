@@ -1084,12 +1084,13 @@ void AllocateFileRange(FILE *file, unsigned int offset, unsigned int length) {
         fcntl(fileno(file), F_PREALLOCATE, &fst);
     }
     ftruncate(fileno(file), fst.fst_length);
-#elif _POSIX_C_SOURCE >= 200112L
+#else
+    #if _POSIX_C_SOURCE >= 200112L
     // Use posix_fallocate to advise the kernel how much data we have to write,
     // if this system supports it.
     off_t nEndPos = (off_t)offset + length;
-    posix_fallocate(fileno(file), 0, nEndPos);
-#else
+    if (0 == posix_fallocate(fileno(file), 0, nEndPos)) return;
+    #endif
     // Fallback version
     // TODO: just write one byte per block
     static const char buf[65536] = {};
