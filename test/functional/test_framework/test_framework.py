@@ -321,6 +321,7 @@ class BitcoinTestFramework(metaclass=BitcoinTestMetaClass):
         assert_equal(len(extra_args), num_nodes)
         assert_equal(len(binary), num_nodes)
         for i in range(num_nodes):
+            extra_args[i].insert(0, "-blockprioritysize=0")
             self.nodes.append(TestNode(
                 i,
                 get_datadir_path(self.options.tmpdir, i),
