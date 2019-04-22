@@ -4540,6 +4540,7 @@ void CWallet::LearnRelatedScripts(const CPubKey& key, OutputType type)
 
 void CWallet::LearnAllRelatedScripts(const CPubKey& key)
 {
+    if (!g_implicit_segwit) return;
     // OutputType::P2SH_SEGWIT always adds all necessary scripts for all types.
     LearnRelatedScripts(key, OutputType::P2SH_SEGWIT);
 }

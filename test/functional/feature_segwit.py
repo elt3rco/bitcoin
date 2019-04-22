@@ -50,6 +50,7 @@ class SegWitTest(BitcoinTestFramework):
                 "-rpcserialversion=0",
                 "-vbparams=segwit:0:999999999999",
                 "-addresstype=legacy",
+                "-walletimplicitsegwit",
             ],
             [
                 "-blockversion=4",

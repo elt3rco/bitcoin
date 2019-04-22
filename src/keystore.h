@@ -15,6 +15,10 @@
 
 #include <boost/signals2/signal.hpp>
 
+static const bool DEFAULT_WALLET_IMPLICIT_SEGWIT = false;
+
+extern bool g_implicit_segwit;
+
 /** A virtual base class for key stores */
 class CKeyStore : public SigningProvider
 {

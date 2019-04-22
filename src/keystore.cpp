@@ -7,6 +7,8 @@
 
 #include <util/system.h>
 
+bool g_implicit_segwit = true;
+
 void CBasicKeyStore::ImplicitlyLearnRelatedKeyScripts(const CPubKey& pubkey)
 {
     AssertLockHeld(cs_KeyStore);
@@ -24,7 +26,7 @@ void CBasicKeyStore::ImplicitlyLearnRelatedKeyScripts(const CPubKey& pubkey)
     // "Implicitly" refers to fact that scripts are derived automatically from
     // existing keys, and are present in memory, even without being explicitly
     // loaded (e.g. from a file).
-    if (pubkey.IsCompressed()) {
+    if (pubkey.IsCompressed() && g_implicit_segwit) {
         CScript script = GetScriptForDestination(WitnessV0KeyHash(key_id));
         // This does not use AddCScript, as it may be overridden.
         CScriptID id(script);
