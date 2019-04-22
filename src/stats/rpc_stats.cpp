@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <rpc/server.h>
+#include <rpc/util.h>
 #include <stats/stats.h>
 #include <util/system.h>
 #include <util/strencodings.h>
@@ -13,22 +14,28 @@
 
 UniValue getmempoolstats(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() != 0)
+    if (request.fHelp || request.params.size() != 0) {
         throw std::runtime_error(
-            "getmempoolstats\n"
-            "\nReturns the collected mempool statictics (non-linear non-interpolated samples).\n"
-            "\nResult:\n"
-            "  {\n"
-            "    \"time_from\" : \"timestamp\",     (numeric) Timestamp, first sample\n"
-            "    \"time_to\"   : \"timestamp\",     (numeric) Timestamp, last sample\n"
-            "    \"samples\"   : [\n"
-            "                    [<delta_in_secs>,<tx_count>,<dynamic_mem_usage>,<min_fee_per_k>],\n"
-            "                    [<delta_in_secs>,<tx_count>,<dynamic_mem_usage>,<min_fee_per_k>],\n"
-            "                    ...\n"
-            "                  ]\n"
-            "  }\n"
-            "\nExamples:\n" +
-            HelpExampleCli("getmempoolstats", "") + HelpExampleRpc("getmempoolstats", ""));
+            RPCHelpMan{"getmempoolstats",
+                "\nReturns the collected mempool statictics (non-linear non-interpolated samples).\n",
+                {},
+                RPCResult{
+            "{\n"
+            "  \"time_from\" : \"timestamp\",     (numeric) Timestamp, first sample\n"
+            "  \"time_to\"   : \"timestamp\",     (numeric) Timestamp, last sample\n"
+            "  \"samples\"   : [\n"
+            "                  [<delta_in_secs>,<tx_count>,<dynamic_mem_usage>,<min_fee_per_k>],\n"
+            "                  [<delta_in_secs>,<tx_count>,<dynamic_mem_usage>,<min_fee_per_k>],\n"
+            "                  ...\n"
+            "                ]\n"
+            "}\n"
+                },
+                RPCExamples{
+                    HelpExampleCli("getmempoolstats", "")
+            + HelpExampleRpc("getmempoolstats", "")
+                },
+            }.ToString());
+    }
 
     // get stats from the core stats model
     uint64_t timeFrom = 0;
