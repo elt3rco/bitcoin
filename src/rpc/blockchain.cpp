@@ -2391,17 +2391,20 @@ UniValue scriptthreadsinfo(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() > 0) {
         throw std::runtime_error(
-            "scriptthreadsinfo\n"
-            "\nShow information about the script verification threads.\n"
-            "\nResult:\n"
+            RPCHelpMan{"scriptthreadsinfo",
+                "\nShow information about the script verification threads.\n",
+                {},
+                RPCResult{
             "{\n"
             "  \"enabled\": xx,                      (boolean) true is script verification threads are enabled (see setscriptthreadsenabled).\n"
             "  \"num_script_check_threads\": xx,     (numeric) The total number of script verification threads.\n"
             "}\n"
-            "\nExamples:\n"
-            + HelpExampleCli("scriptthreadsinfo", "")
+                },
+                RPCExamples{
+                    HelpExampleCli("scriptthreadsinfo", "")
             + HelpExampleRpc("scriptthreadsinfo", "")
-        );
+                },
+            }.ToString());
     }
 
     UniValue ret(UniValue::VOBJ);
@@ -2414,15 +2417,19 @@ UniValue setscriptthreadsenabled(const JSONRPCRequest& request)
 {
     if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "setscriptthreadsenabled\n"
-            "\nDisable/enable script verification threads and therefore reducing CPU usage on multicore systems.\n"
-            "Disabling script verification threads may result in a significant slow-down during synchronisation.\n"
-            "Has no effect on single core machines or if started with -par=<-<numcores>\n"
-            "\nArguments:\n"
-            "1. state      (boolean, required) false if script verification threads should be disabled (true for re-enabling).\n"
-            "\nExamples:\n"
-            + HelpExampleCli("setscriptthreadsenabled", "false")
+            RPCHelpMan{"setscriptthreadsenabled",
+                "\nDisable/enable script verification threads and therefore reducing CPU usage on multicore systems.\n"
+                "Disabling script verification threads may result in a significant slow-down during synchronisation.\n"
+                "Has no effect on single core machines or if started with -par=<-<numcores>\n",
+                {
+                    {"state", RPCArg::Type::BOOL, RPCArg::Optional::NO, "false if script verification threads should be disabled (true for re-enabling)"},
+                },
+                RPCResults{},
+                RPCExamples{
+                    HelpExampleCli("setscriptthreadsenabled", "false")
             + HelpExampleRpc("setscriptthreadsenabled", "false")
+                },
+            }.ToString()
         );
     }
 
