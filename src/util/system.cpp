@@ -523,6 +523,11 @@ void ArgsManager::ForceSetArg(const std::string& strArg, const std::string& strV
     m_override_args[strArg] = {strValue};
 }
 
+void ArgsManager::ForceSetArg(const std::string& strArg, int64_t nValue)
+{
+    ForceSetArg(strArg, i64tostr(nValue));
+}
+
 void ArgsManager::AddArg(const std::string& name, const std::string& help, const bool debug_only, const OptionsCategory& cat)
 {
     // Split arg name from its help param

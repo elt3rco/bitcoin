@@ -13,6 +13,7 @@
 #include <qt/guiutil.h>
 
 #include <interfaces/node.h>
+#include <chainparams.h>
 #include <validation.h> // For DEFAULT_SCRIPTCHECK_THREADS
 #include <net.h>
 #include <netbase.h>
@@ -121,6 +122,11 @@ void OptionsModel::Init(bool resetSettings)
 #endif
 
     // Network
+    if (!settings.contains("nNetworkPort"))
+        settings.setValue("nNetworkPort", (quint16)Params().GetDefaultPort());
+    if (!gArgs.SoftSetArg("-port", settings.value("nNetworkPort").toString().toStdString()))
+        addOverriddenOption("-port");
+
     if (!settings.contains("fUseUPnP"))
         settings.setValue("fUseUPnP", DEFAULT_UPNP);
     if (!m_node.softSetBoolArg("-upnp", settings.value("fUseUPnP").toBool()))
@@ -255,6 +261,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return fHideTrayIcon;
         case MinimizeToTray:
             return fMinimizeToTray;
+        case NetworkPort:
+            return settings.value("nNetworkPort");
         case MapPortUPnP:
 #ifdef USE_UPNP
             return settings.value("fUseUPnP");
@@ -329,6 +337,18 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
         case MinimizeToTray:
             fMinimizeToTray = value.toBool();
             settings.setValue("fMinimizeToTray", fMinimizeToTray);
+            break;
+        case NetworkPort:
+            if (settings.value("nNetworkPort") != value) {
+                // If the port input box is empty, set to default port
+                if (value.toString().isEmpty()) {
+                    settings.setValue("nNetworkPort", (quint16)Params().GetDefaultPort());
+                }
+                else {
+                    settings.setValue("nNetworkPort", (quint16)value.toInt());
+                }
+                setRestartRequired(true);
+            }
             break;
         case MapPortUPnP: // core option - can be changed on-the-fly
             settings.setValue("fUseUPnP", value.toBool());
