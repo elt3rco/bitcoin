@@ -730,7 +730,7 @@ static UniValue getbalance(const JSONRPCRequest& request)
                 "thus affected by options which limit spendability such as -spendzeroconfchange.\n",
                 {
                     {"dummy", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Remains for backward compatibility. Must be excluded or set to \"*\"."},
-                    {"minconf", RPCArg::Type::NUM, /* default */ "0", "Only include transactions confirmed at least this many times."},
+                    {"minconf", RPCArg::Type::NUM, /* default */ "1", "Only include transactions confirmed at least this many times. (Requires dummy=\"*\")"},
                     {"include_watchonly", RPCArg::Type::BOOL, /* default */ "false", "Also include balance in watch-only addresses (see 'importaddress')"},
                 },
                 RPCResult{
@@ -759,6 +759,10 @@ static UniValue getbalance(const JSONRPCRequest& request)
     }
 
     int min_depth = 0;
+    if (!dummy_value.isNull()) {
+        // Default min_depth to 1 when dummy="*"
+        min_depth = 1;
+    }
     if (!request.params[1].isNull()) {
         min_depth = request.params[1].get_int();
     }
@@ -768,6 +772,13 @@ static UniValue getbalance(const JSONRPCRequest& request)
         filter = filter | ISMINE_WATCH_ONLY;
     }
 
+    if (!dummy_value.isNull()) {
+        return ValueFromAmount(pwallet->GetLegacyBalance(filter, min_depth));
+    }
+
+    if (!request.params[1].isNull()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "getbalance minconf option is only currently supported if dummy is set to \"*\"");
+    }
     return ValueFromAmount(pwallet->GetBalance(filter, min_depth));
 }
 
@@ -4161,7 +4172,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "encryptwallet",                    &encryptwallet,                 {"passphrase"} },
     { "wallet",             "getaddressesbylabel",              &getaddressesbylabel,           {"label"} },
     { "wallet",             "getaddressinfo",                   &getaddressinfo,                {"address"} },
-    { "wallet",             "getbalance",                       &getbalance,                    {"dummy","minconf","include_watchonly"} },
+    { "wallet",             "getbalance",                       &getbalance,                    {"dummy|account","minconf","include_watchonly"} },
     { "wallet",             "getnewaddress",                    &getnewaddress,                 {"label","address_type"} },
     { "wallet",             "getrawchangeaddress",              &getrawchangeaddress,           {"address_type"} },
     { "wallet",             "getreceivedbyaddress",             &getreceivedbyaddress,          {"address","minconf"} },
