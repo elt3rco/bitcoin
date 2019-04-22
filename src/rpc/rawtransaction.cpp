@@ -1053,7 +1053,7 @@ UniValue signrawtransaction(const JSONRPCRequest& request)
 
 static UniValue sendrawtransaction(const JSONRPCRequest& request)
 {
-    if (request.fHelp || request.params.size() < 1 || request.params.size() > 2)
+    if (request.fHelp || request.params.size() < 1 || request.params.size() > 3)
         throw std::runtime_error(
             RPCHelpMan{"sendrawtransaction",
                 "\nSubmits raw transaction (serialized, hex-encoded) to local node and network.\n"
@@ -1061,6 +1061,7 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
                 {
                     {"hexstring", RPCArg::Type::STR_HEX, RPCArg::Optional::NO, "The hex string of the raw transaction"},
                     {"maxfeerate", RPCArg::Type::AMOUNT, /* default */ FormatMoney(maxTxFee), "Reject transactions whose fee rate is higher than the specified value, expressed in " + CURRENCY_UNIT + "/kB\n"},
+                    {"ignore_reject", RPCArg::Type::ARR, /* default */ "[]", "Rejection conditions to ignore, eg 'absurdly-high-fee'"},
                 },
                 RPCResult{
             "\"hex\"             (string) The transaction hash in hex\n"
@@ -1080,6 +1081,7 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
     RPCTypeCheck(request.params, {
         UniValue::VSTR,
         UniValueType(), // NUM or BOOL, checked later
+        UniValue::VARR,
     });
 
     // parse hex string from parameter
@@ -1088,10 +1090,15 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     CTransactionRef tx(MakeTransactionRef(std::move(mtx)));
 
+    const UniValue* json_ign_rejs = &request.params[2];
+
     CAmount highfee = maxTxFee;
     // TODO: temporary migration code for old clients. Remove in v0.20
     if (request.params[1].isBool()) {
         if (request.params[1].get_bool()) highfee = 0;
+    } else if (request.params[1].isArray() && request.params[2].isNull()) {
+        // ignore_reject used to occupy this position
+        json_ign_rejs = &request.params[1];
     } else if (!request.params[1].isNull()) {
         size_t weight = GetTransactionWeight(*tx);
         CFeeRate fr(AmountFromValue(request.params[1]));
@@ -1101,9 +1108,17 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
         highfee = fr.GetFee((weight+3)/4);
     }
 
+    ignore_rejects_type ignore_rejects;
+    if (!json_ign_rejs->isNull()) {
+        for (size_t i = 0; i < json_ign_rejs->size(); ++i) {
+            const UniValue& json_ign_rej = (*json_ign_rejs)[i];
+            ignore_rejects.insert(json_ign_rej.get_str());
+        }
+    }
+
     uint256 txid;
     std::string err_string;
-    const TransactionError err = BroadcastTransaction(tx, txid, err_string, highfee);
+    const TransactionError err = BroadcastTransaction(tx, txid, err_string, highfee, ignore_rejects);
     if (TransactionError::OK != err) {
         throw JSONRPCTransactionError(err, err_string);
     }
@@ -2094,7 +2109,7 @@ static const CRPCCommand commands[] =
     { "rawtransactions",    "createrawtransaction",         &createrawtransaction,      {"inputs","outputs","locktime","replaceable"} },
     { "rawtransactions",    "decoderawtransaction",         &decoderawtransaction,      {"hexstring","iswitness"} },
     { "rawtransactions",    "decodescript",                 &decodescript,              {"hexstring"} },
-    { "rawtransactions",    "sendrawtransaction",           &sendrawtransaction,        {"hexstring","allowhighfees|maxfeerate"} },
+    { "rawtransactions",    "sendrawtransaction",           &sendrawtransaction,        {"hexstring","allowhighfees|maxfeerate","ignore_rejects"} },
     { "rawtransactions",    "combinerawtransaction",        &combinerawtransaction,     {"txs"} },
     { "hidden",             "signrawtransaction",           &signrawtransaction,        {"hexstring","prevtxs","privkeys","sighashtype"} },
     { "rawtransactions",    "signrawtransactionwithkey",    &signrawtransactionwithkey, {"hexstring","privkeys","prevtxs","sighashtype"} },
