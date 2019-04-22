@@ -93,13 +93,24 @@ class CKeyMetadata
 {
 public:
     static const int VERSION_BASIC=1;
+    static const int VERSION_WITH_FLAGS=2;
     static const int VERSION_WITH_HDDATA=10;
     static const int VERSION_WITH_KEY_ORIGIN = 12;
     static const int CURRENT_VERSION=VERSION_WITH_KEY_ORIGIN;
+
+    static const uint8_t KEY_ORIGIN_UNSET         = 0x0000;
+    static const uint8_t KEY_ORIGIN_UNKNOWN       = 0x0001;
+    static const uint8_t KEY_ORIGIN_IMPORTED      = 0x0002;
+    static const uint8_t KEY_ORIGIN_UNENC_WALLET  = 0x0004;
+    static const uint8_t KEY_ORIGIN_ENC_WALLET    = 0x0008;
+
     int nVersion;
     int64_t nCreateTime; // 0 means unknown
     std::string hdKeypath; //optional HD/bip32 keypath. Still used to determine whether a key is a seed. Also kept for backwards compatibility
     CKeyID hd_seed_id; //id of the HD seed used to derive this key
+private:
+    uint8_t keyFlags;
+public:
     KeyOriginInfo key_origin; // Key origin info with path and fingerprint
     bool has_key_origin = false; //< Whether the key_origin is useful
 
@@ -111,6 +122,7 @@ public:
     {
         SetNull();
         nCreateTime = nCreateTime_;
+        keyFlags = KEY_ORIGIN_UNSET;
     }
 
     ADD_SERIALIZE_METHODS;
@@ -123,6 +135,8 @@ public:
         {
             READWRITE(hdKeypath);
             READWRITE(hd_seed_id);
+        } else if (nVersion >= VERSION_WITH_FLAGS) {
+            READWRITE(keyFlags);
         }
         if (this->nVersion >= VERSION_WITH_KEY_ORIGIN)
         {
@@ -137,8 +151,21 @@ public:
         nCreateTime = 0;
         hdKeypath.clear();
         hd_seed_id.SetNull();
+        keyFlags = KEY_ORIGIN_UNSET;
         key_origin.clear();
         has_key_origin = false;
+    }
+
+    void SetKeyOrigin(const uint8_t n) {
+        keyFlags = n;
+    }
+
+    uint8_t GetKeyOrigin() const {
+        if (nVersion < VERSION_WITH_FLAGS || nVersion >= VERSION_WITH_HDDATA) {
+            // If the metadata doesn't support saving flags, never return them
+            return 0;
+        }
+        return keyFlags;
     }
 };
 
