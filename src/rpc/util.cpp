@@ -47,7 +47,7 @@ CPubKey AddrToPubKey(CKeyStore* const keystore, const std::string& addr_in)
 }
 
 // Creates a multisig redeemscript from a given list of public keys and number required.
-CScript CreateMultisigRedeemscript(const int required, const std::vector<CPubKey>& pubkeys)
+CScript CreateMultisigRedeemscript(const int required, const std::vector<CPubKey>& pubkeys, bool fSorted)
 {
     // Gather public keys
     if (required < 1) {
@@ -60,7 +60,7 @@ CScript CreateMultisigRedeemscript(const int required, const std::vector<CPubKey
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Number of keys involved in the multisignature address creation > 16\nReduce the number");
     }
 
-    CScript result = GetScriptForMultisig(required, pubkeys);
+    CScript result = GetScriptForMultisig(required, pubkeys, fSorted);
 
     if (result.size() > MAX_SCRIPT_ELEMENT_SIZE) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, (strprintf("redeemScript exceeds size limit: %d > %d", result.size(), MAX_SCRIPT_ELEMENT_SIZE)));
