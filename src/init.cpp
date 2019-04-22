@@ -17,6 +17,7 @@
 #include <checkpoints.h>
 #include <compat/sanity.h>
 #include <consensus/validation.h>
+#include <dbwrapper.h>
 #include <fs.h>
 #include <httpserver.h>
 #include <httprpc.h>
@@ -736,6 +737,11 @@ static void ThreadImport(std::vector<fs::path> vImportFiles)
  */
 static bool InitSanityCheck()
 {
+    if (!dbwrapper_SanityCheck()) {
+        InitError("Database sanity check failure. Aborting.");
+        return false;
+    }
+
     if(!ECC_InitSanityCheck()) {
         InitError("Elliptic curve cryptography sanity check failure. Aborting.");
         return false;

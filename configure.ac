@@ -884,10 +884,66 @@ if test x$use_reduce_exports = xyes; then
   [AC_MSG_ERROR([Cannot set default symbol visibility. Use --disable-reduce-exports.])])
 fi
 
+dnl Check for leveldb, only if explicitly requested
 LEVELDB_CPPFLAGS=
 LIBLEVELDB=
 LIBMEMENV=
-AM_CONDITIONAL([EMBEDDED_LEVELDB],[true])
+AC_ARG_WITH([system-leveldb],
+  [AS_HELP_STRING([--with-system-leveldb],
+  [Build with system LevelDB (default is no; DANGEROUS; NOT SUPPORTED)])],
+  [system_leveldb=$withval],
+  [system_leveldb=no]
+)
+if test x$system_leveldb != xno; then
+  LEVELDB_CPPFLAGS=
+  AC_CHECK_LIB([leveldb],[main],[
+    LIBLEVELDB=-lleveldb
+  ],[
+    AC_MSG_ERROR([leveldb library not found; using --with-system-leveldb is not supported anyway])
+  ])
+  AC_CHECK_HEADER([leveldb/filter_policy.h],[],[
+    AC_MSG_ERROR([LevelDB headers not found; using --with-system-leveldb is not supported anyway])
+  ])
+  AC_CHECK_HEADER([leveldb/helpers/memenv.h],[
+    AC_MSG_CHECKING([for memenv.h path])
+    BITCOIN_SUBDIR_TO_INCLUDE([LEVELDB_CPPFLAGS],[leveldb/helpers/],[memenv])
+  ],[
+    AC_CHECK_HEADER([memenv.h],[],[
+      AC_MSG_ERROR([LevelDB headers not found; using --with-system-leveldb is not supported anyway])
+    ])
+  ])
+
+  AC_MSG_CHECKING([library containing leveldb::NewMemEnv])
+  TEMP_LIBS="$LIBS"
+  TEMP_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="$CPPFLAGS $LEVELDB_CPPFLAGS"
+  for searchlib in "" "-lmemenv" ERR; do
+    if test "x$searchlib" = "xERR"; then
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([LevelDB's memenv helper not found; using --with-system-leveldb is not supported anyway])
+    fi
+    searchlib="$searchlib $LIBLEVELDB"
+    LIBS="$searchlib $TEMP_LIBS"
+    AC_LINK_IFELSE([AC_LANG_SOURCE([
+        #include <leveldb/env.h>
+        #include <memenv.h>
+
+        int main() {
+            leveldb::Env *myenv = leveldb::NewMemEnv(leveldb::Env::Default());
+            delete myenv;
+        }
+    ])],[
+      AC_MSG_RESULT([$searchlib])
+      LIBMEMENV="$searchlib"
+      break
+    ])
+  done
+  LIBS="$TEMP_LIBS"
+  CPPFLAGS="$TEMP_CPPFLAGS"
+else
+  AC_DEFINE(EMBEDDED_LEVELDB, 1, [Define this symbol when the embedded copy of LevelDB is being used])
+fi
+AM_CONDITIONAL([EMBEDDED_LEVELDB],[test x$system_leveldb = xno])
 AC_SUBST(LEVELDB_CPPFLAGS)
 AC_SUBST(LIBLEVELDB)
 AC_SUBST(LIBMEMENV)
