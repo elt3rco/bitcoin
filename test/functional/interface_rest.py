@@ -25,6 +25,7 @@ from test_framework.util import (
 from test_framework.messages import BLOCK_HEADER_SIZE
 
 class ReqType(Enum):
+    NONE = 0
     JSON = 1
     BIN = 2
     HEX = 3
@@ -207,6 +208,30 @@ class RESTTest (BitcoinTestFramework):
         self.nodes[0].generate(1)  # generate block to not affect upcoming tests
         self.sync_all()
 
+        ## Check json block hash against bb_hash
+        #response_hash_json = self.test_rest_request("/blockhash/{}".format(str(chain_height)), req_type=ReqType.JSON, ret_type=RetType.OBJ)
+        #response_hash_json_str = response_hash_json.read().decode('utf-8')
+        #hash_json_obj = json.loads(response_hash_json_str)
+        #assert_equal(hash_json_obj['hash'], bb_hash)
+        ## Check binary block hash against bb_hash
+        #response_hash = self.test_rest_request("/blockhash/{}".format(str(chain_height)), req_type=ReqType.BIN, ret_type=RetType.OBJ)
+        #print(self.test_rest_request("/blockhashbyheight/{}".format(str(chain_height)), req_type=ReqType.BIN, ret_type=RetType.BYTES))
+        #assert_equal(int(response_hash.getheader('content-length')), 32)
+        #response_hash_str = response_hash.read()
+        #output = BytesIO()
+        #output.write(response_hash_str)
+        #output.seek(0)
+        #hashFromBinResponse = binascii.hexlify(output.read(32)[::-1]).decode('ascii')
+        #assert_equal(hashFromBinResponse, bb_hash)
+
+        ## Check hex block hash against bb_hash
+        #response_hash_hex = self.test_rest_request("/blockhash/{}".format(str(chain_height)), req_type=ReqType.HEX, ret_type=RetType.OBJ)
+        #assert_equal(int(response_hash_hex.getheader('content-length')), 65)
+        #response_hash_hex_str = response_hash_hex.read()
+        #print(self.test_rest_request("/blockhashbyheight/{}".format(str(chain_height)), req_type=ReqType.HEX, ret_type=RetType.BYTES))
+        #assert_equal(binascii.hexlify(response_hash_str)[0:64], response_hash_hex_str[0:64])
+
+
         self.log.info("Test the /block, /blockhashbyheight and /headers URIs")
         bb_hash = self.nodes[0].getbestblockhash()
 
@@ -247,6 +272,7 @@ class RESTTest (BitcoinTestFramework):
         block_json_obj = self.test_rest_request("/block/{}".format(bb_hash))
         assert_equal(block_json_obj['hash'], bb_hash)
         assert_equal(self.test_rest_request("/blockhashbyheight/{}".format(block_json_obj['height']))['blockhash'], bb_hash)
+        assert_equal(self.test_rest_request("/blockhash/{}".format(block_json_obj['height']))['hash'], bb_hash)
 
         # Check hex/bin format
         resp_hex = self.test_rest_request("/blockhashbyheight/{}".format(block_json_obj['height']), req_type=ReqType.HEX, ret_type=RetType.OBJ)
@@ -254,6 +280,19 @@ class RESTTest (BitcoinTestFramework):
         resp_bytes = self.test_rest_request("/blockhashbyheight/{}".format(block_json_obj['height']), req_type=ReqType.BIN, ret_type=RetType.BYTES)
         blockhash = binascii.hexlify(resp_bytes[::-1]).decode('utf-8')
         assert_equal(blockhash, bb_hash)
+
+        # Check hex/bin format for legacy blockhash endpoint
+        response_hash = self.test_rest_request("/blockhash/{}".format(str(block_json_obj['height'])), req_type=ReqType.BIN, ret_type=RetType.OBJ)
+        assert_equal(int(response_hash.getheader('content-length')), 32)
+        response_hash_str = response_hash.read()
+        hashFromBinResponse = binascii.hexlify(response_hash_str[::-1]).decode('ascii')
+        assert_equal(hashFromBinResponse, bb_hash)
+
+        response_hash_hex = self.test_rest_request("/blockhash/{}".format(str(block_json_obj['height'])), req_type=ReqType.HEX, ret_type=RetType.OBJ)
+        assert_equal(int(response_hash_hex.getheader('content-length')), 65)
+        response_hash_hex_str = response_hash_hex.read()
+        # NOTE: bb_hash is reversed byte order (because that's how block hashes are typically encoded), but the older API just did straight hex encoding of the binary form
+        assert_equal(response_hash_hex_str, binascii.hexlify(response_hash_str) + b'\n')
 
         # Check invalid blockhashbyheight requests
         resp = self.test_rest_request("/blockhashbyheight/abc", ret_type=RetType.OBJ, status=400)
@@ -263,6 +302,26 @@ class RESTTest (BitcoinTestFramework):
         resp = self.test_rest_request("/blockhashbyheight/-1", ret_type=RetType.OBJ, status=400)
         assert_equal(resp.read().decode('utf-8').rstrip(), "Invalid height: -1")
         self.test_rest_request("/blockhashbyheight/", ret_type=RetType.OBJ, status=400)
+
+        # Check invalid blockhash requests
+        # Must be a 404 because it's missing the trailing slash and height parameter
+        response = self.test_rest_request("/blockhash", req_type=ReqType.NONE, status=404, ret_type=RetType.OBJ)
+
+        # Must be a 400 because no height parameter was passed
+        response = self.test_rest_request("/blockhash/", req_type=ReqType.JSON, status=400, ret_type=RetType.OBJ)
+
+        # Must be a 404 because no output format was passed
+        response = self.test_rest_request("/blockhash/0", req_type=ReqType.NONE, status=404, ret_type=RetType.OBJ)
+
+        # Must be a 400 because a non-numeric height parameter was passed
+        response = self.test_rest_request("/blockhash/a0", req_type=ReqType.JSON, status=400, ret_type=RetType.OBJ)
+
+        # Must be a 400 because a negative height parameter was passed
+        response = self.test_rest_request("/blockhash/-1", req_type=ReqType.JSON, status=400, ret_type=RetType.OBJ)
+
+        # Must be a 400 because the height parameter is greater than the chain height
+        response = self.test_rest_request("/blockhash/1000000", req_type=ReqType.JSON, status=400, ret_type=RetType.OBJ)
+
 
         # Compare with json block header
         json_obj = self.test_rest_request("/headers/1/{}".format(bb_hash))

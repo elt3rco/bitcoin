@@ -582,6 +582,8 @@ static bool rest_blockhash_by_height(HTTPRequest* req,
     std::string height_str;
     const RetFormat rf = ParseDataFormat(height_str, str_uri_part);
 
+    const bool old_api = (req->GetURI()[15] == '/');
+
     int32_t blockheight;
     if (!ParseInt32(height_str, &blockheight) || blockheight < 0) {
         return RESTERR(req, HTTP_BAD_REQUEST, "Invalid height: " + SanitizeString(height_str));
@@ -591,6 +593,7 @@ static bool rest_blockhash_by_height(HTTPRequest* req,
     {
         LOCK(cs_main);
         if (blockheight > chainActive.Height()) {
+            if (old_api) return RESTERR(req, HTTP_BAD_REQUEST, "Block height out of range: " + height_str);
             return RESTERR(req, HTTP_NOT_FOUND, "Block height out of range");
         }
         pblockindex = chainActive[blockheight];
@@ -605,13 +608,20 @@ static bool rest_blockhash_by_height(HTTPRequest* req,
     }
     case RetFormat::HEX: {
         req->WriteHeader("Content-Type", "text/plain");
+        if (old_api) {
+            // GetHex reverses the byte order; however, the older API simply encoded the binary format directly
+            CDataStream ssGetBlockHashResponse(SER_NETWORK, PROTOCOL_VERSION);
+            ssGetBlockHashResponse << pblockindex->GetBlockHash();
+            req->WriteReply(HTTP_OK, HexStr(ssGetBlockHashResponse.begin(), ssGetBlockHashResponse.end()) + "\n");
+            return true;
+        }
         req->WriteReply(HTTP_OK, pblockindex->GetBlockHash().GetHex() + "\n");
         return true;
     }
     case RetFormat::JSON: {
         req->WriteHeader("Content-Type", "application/json");
         UniValue resp = UniValue(UniValue::VOBJ);
-        resp.pushKV("blockhash", pblockindex->GetBlockHash().GetHex());
+        resp.pushKV(old_api ? "hash" : "blockhash", pblockindex->GetBlockHash().GetHex());
         req->WriteReply(HTTP_OK, resp.write() + "\n");
         return true;
     }
@@ -628,6 +638,7 @@ static const struct {
       {"/rest/tx/", rest_tx},
       {"/rest/block/notxdetails/", rest_block_notxdetails},
       {"/rest/block/", rest_block_extended},
+      {"/rest/blockhash/", rest_blockhash_by_height},
       {"/rest/chaininfo", rest_chaininfo},
       {"/rest/mempool/info", rest_mempool_info},
       {"/rest/mempool/contents", rest_mempool_contents},
