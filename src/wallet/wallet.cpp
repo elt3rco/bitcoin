@@ -39,6 +39,11 @@
 
 static const size_t OUTPUT_GROUP_MAX_ENTRIES = 10;
 
+/*
+ * Signal when transactions are added to wallet
+ */
+boost::signals2::signal<void (const CTransactionRef &ptxn, const uint256 &blockHash)> CWallet::TransactionAddedToWallet;
+
 static CCriticalSection cs_wallets;
 static std::vector<std::shared_ptr<CWallet>> vpwallets GUARDED_BY(cs_wallets);
 
@@ -996,6 +1001,9 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFlushOnClose)
 
     // Notify UI of new or updated transaction
     NotifyTransactionChanged(this, hash, fInsertedNew ? CT_NEW : CT_UPDATED);
+
+    // Notify listeners on new wallet transaction
+    CWallet::TransactionAddedToWallet(wtx.tx, wtx.hashBlock);
 
     // notify an external script when a wallet transaction comes in or is updated
     std::string strCmd = gArgs.GetArg("-walletnotify", "");
