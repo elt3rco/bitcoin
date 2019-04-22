@@ -36,6 +36,7 @@ public:
 
     QString getDataDirectory();
     void setDataDirectory(const QString &dataDir);
+    uint64_t getPrune();
 
     /**
      * Determine data directory. Let the user choose if the current one doesn't exist.
@@ -47,6 +48,7 @@ public:
      * will cause the wrong path to be cached.
      */
     static bool pickDataDirectory(interfaces::Node& node);
+    static bool c_just_set_pruning;
 
     /**
      * Determine default data directory for operating system.
@@ -64,6 +66,7 @@ private Q_SLOTS:
     void on_ellipsisButton_clicked();
     void on_dataDirDefault_clicked();
     void on_dataDirCustom_clicked();
+    void UpdateText();
 
 private:
     Ui::Intro *ui;
