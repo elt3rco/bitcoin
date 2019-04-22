@@ -1498,6 +1498,7 @@ static UniValue getchaintips(const JSONRPCRequest& request)
 UniValue mempoolInfoToJSON()
 {
     UniValue ret(UniValue::VOBJ);
+    ret.pushKV("loaded", g_is_mempool_loaded);
     ret.pushKV("size", (int64_t) mempool.size());
     ret.pushKV("bytes", (int64_t) mempool.GetTotalTxSize());
     ret.pushKV("usage", (int64_t) mempool.DynamicMemoryUsage());
@@ -1518,6 +1519,7 @@ static UniValue getmempoolinfo(const JSONRPCRequest& request)
                 {},
                 RPCResult{
             "{\n"
+            "  \"loaded\": true|false         (boolean) True if the mempool is fully loaded\n"
             "  \"size\": xxxxx,               (numeric) Current tx count\n"
             "  \"bytes\": xxxxx,              (numeric) Sum of all virtual transaction sizes as defined in BIP 141. Differs from actual serialized size because witness data is discounted\n"
             "  \"usage\": xxxxx,              (numeric) Total memory usage for the mempool\n"
