@@ -889,6 +889,13 @@ UniValue dumpwallet(const JSONRPCRequest& request)
         std::string strLabel;
         CKey key;
         if (pwallet->GetKey(keyid, key)) {
+            CKeyMetadata meta;
+            {
+                const auto meta_it = pwallet->mapKeyMetadata.find(keyid);
+                if (meta_it != pwallet->mapKeyMetadata.end()) {
+                    meta = meta_it->second;
+                }
+            }
             file << strprintf("%s %s ", EncodeSecret(key), strTime);
             if (GetWalletAddressesForKey(pwallet, keyid, strAddr, strLabel)) {
                file << strprintf("label=%s", strLabel);
@@ -896,12 +903,18 @@ UniValue dumpwallet(const JSONRPCRequest& request)
                 file << "hdseed=1";
             } else if (mapKeyPool.count(keyid)) {
                 file << "reserve=1";
-            } else if (pwallet->mapKeyMetadata[keyid].hdKeypath == "s") {
+            } else if (meta.hdKeypath == "s") {
                 file << "inactivehdseed=1";
             } else {
                 file << "change=1";
             }
-            file << strprintf(" # addr=%s%s\n", strAddr, (pwallet->mapKeyMetadata[keyid].has_key_origin ? " hdkeypath="+WriteHDKeypath(pwallet->mapKeyMetadata[keyid].key_origin.path) : ""));
+            if (meta.has_key_origin) {
+                file << " hdkeypath=" + WriteHDKeypath(meta.key_origin.path);
+                if (!(meta.hd_seed_id.IsNull() || (meta.hdKeypath == "s" && meta.hd_seed_id == keyid))) {
+                    file << " hdseedid=" + meta.hd_seed_id.GetHex();
+                }
+            }
+            file << strprintf(" # addr=%s\n", strAddr);
         }
     }
     file << "\n";
