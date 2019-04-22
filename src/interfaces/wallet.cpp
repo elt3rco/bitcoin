@@ -269,12 +269,13 @@ public:
     bool createBumpTransaction(const uint256& txid,
         const CCoinControl& coin_control,
         CAmount total_fee,
+        int32_t reduce_output,
         std::vector<std::string>& errors,
         CAmount& old_fee,
         CAmount& new_fee,
         CMutableTransaction& mtx) override
     {
-        return feebumper::CreateTransaction(m_wallet.get(), txid, coin_control, total_fee, errors, old_fee, new_fee, mtx) ==
+        return feebumper::CreateTransaction(m_wallet.get(), txid, coin_control, total_fee, reduce_output, errors, old_fee, new_fee, mtx) ==
                feebumper::Result::OK;
     }
     bool signBumpTransaction(CMutableTransaction& mtx) override { return feebumper::SignTransaction(m_wallet.get(), mtx); }

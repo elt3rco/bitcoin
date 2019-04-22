@@ -75,7 +75,8 @@ bool TransactionCanBeBumped(const CWallet* wallet, const uint256& txid)
     return res == feebumper::Result::OK;
 }
 
-Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoinControl& coin_control, CAmount total_fee, std::vector<std::string>& errors,
+Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoinControl& coin_control,
+                         CAmount total_fee, int32_t reduce_output, std::vector<std::string>& errors,
                          CAmount& old_fee, CAmount& new_fee, CMutableTransaction& mtx)
 {
     auto locked_chain = wallet->chain().lock();
@@ -87,22 +88,28 @@ Result CreateTransaction(const CWallet* wallet, const uint256& txid, const CCoin
         return Result::INVALID_ADDRESS_OR_KEY;
     }
     const CWalletTx& wtx = it->second;
+    if (reduce_output < -1 || reduce_output >= int64_t(wtx.tx->vout.size())) {
+        errors.push_back(strprintf("Change output out of bounds [0..%zu]", wtx.tx->vout.size()-1));
+        return Result::INVALID_PARAMETER;
+    }
 
     Result result = PreconditionChecks(*locked_chain, wallet, wtx, errors);
     if (result != Result::OK) {
         return result;
     }
 
-    // figure out which output was change
-    // if there was no change output or multiple change outputs, fail
-    int nOutput = -1;
-    for (size_t i = 0; i < wtx.tx->vout.size(); ++i) {
-        if (wallet->IsChange(wtx.tx->vout[i])) {
-            if (nOutput != -1) {
-                errors.push_back("Transaction has multiple change outputs");
-                return Result::WALLET_ERROR;
+    int nOutput = reduce_output;
+    if (nOutput == -1) {
+        // figure out which output was change
+        // if there was no change output or multiple change outputs, fail
+        for (size_t i = 0; i < wtx.tx->vout.size(); ++i) {
+            if (wallet->IsChange(wtx.tx->vout[i])) {
+                if (nOutput != -1) {
+                    errors.push_back("Transaction has multiple change outputs");
+                    return Result::WALLET_ERROR;
+                }
+                nOutput = i;
             }
-            nOutput = i;
         }
     }
     if (nOutput == -1) {
