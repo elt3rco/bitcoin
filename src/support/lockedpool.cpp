@@ -249,6 +249,12 @@ void *PosixLockedPageAllocator::AllocateLocked(size_t len, bool *lockingSuccess)
     }
     if (addr) {
         *lockingSuccess = mlock(addr, len) == 0;
+#ifdef MADV_DONTFORK
+        madvise(addr, len, MADV_DONTFORK);
+#endif
+#ifdef MADV_DONTDUMP
+        madvise(addr, len, MADV_DONTDUMP);
+#endif
     }
     return addr;
 }

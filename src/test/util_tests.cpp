@@ -1105,7 +1105,8 @@ static void TestOtherProcess(fs::path dirname, std::string lockname, int fd)
             break;
         case ExitCommand:
             close(fd);
-            exit(0);
+            // NOTE: We need to avoid calling exit handlers, since secure-allocated objects are disappeared
+            _exit(0);
         default:
             assert(0);
         }
