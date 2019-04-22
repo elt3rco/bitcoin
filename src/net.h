@@ -382,7 +382,7 @@ private:
     // P2P timeout in seconds
     int64_t m_peer_connect_timeout;
 
-    // Whitelisted ranges. Any node connecting from these is automatically
+    // Whitelisted ranges. Any node communicating using these is automatically
     // whitelisted (as well as those connecting to whitelisted binds).
     std::vector<CSubNet> vWhitelistedRange;
 
