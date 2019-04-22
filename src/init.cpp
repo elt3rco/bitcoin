@@ -39,6 +39,7 @@
 #include <script/sigcache.h>
 #include <scheduler.h>
 #include <shutdown.h>
+#include <stats/stats.h>
 #include <timedata.h>
 #include <txdb.h>
 #include <txmempool.h>
@@ -519,6 +520,7 @@ void SetupServerArgs()
     gArgs.AddArg("-minrelaytxfee=<amt>", strprintf("Fees (in %s/kB) smaller than this are considered zero fee for relaying, mining and transaction creation (default: %s)",
         CURRENCY_UNIT, FormatMoney(DEFAULT_MIN_RELAY_TX_FEE)), false, OptionsCategory::NODE_RELAY);
     gArgs.AddArg("-sendtofuture", strprintf("Relay and mine transactions sending to future witness script versions (default: %u)", DEFAULT_ALLOW_SENDING_TO_FUTURE_WITNESS_VERSIONS), false, OptionsCategory::NODE_RELAY);
+    gArgs.AddArg("-spkreuse", strprintf("Accept transactions reusing addresses or other pubkey scripts (default: %s)", DEFAULT_SPKREUSE), false, OptionsCategory::NODE_RELAY);
     gArgs.AddArg("-whitelistforcerelay", strprintf("Force relay of transactions from whitelisted peers even if they violate local relay policy (default: %d)", DEFAULT_WHITELISTFORCERELAY), false, OptionsCategory::NODE_RELAY);
     gArgs.AddArg("-whitelistrelay", strprintf("Accept relayed transactions received from whitelisted peers even when not relaying transactions (default: %d)", DEFAULT_WHITELISTRELAY), false, OptionsCategory::NODE_RELAY);
 
@@ -546,6 +548,8 @@ void SetupServerArgs()
 #else
     hidden_args.emplace_back("-daemon");
 #endif
+
+    CStats::AddStatsOptions();
 
     // Add the hidden options
     gArgs.AddHiddenArgs(hidden_args);
@@ -1151,6 +1155,16 @@ bool AppInitParameterInteraction()
 
     g_allow_sending_to_future_witness_versions = gArgs.GetBoolArg("-sendtofuture", DEFAULT_ALLOW_SENDING_TO_FUTURE_WITNESS_VERSIONS);
 
+    {
+        std::string strSpkReuse = gArgs.GetArg("-spkreuse", DEFAULT_SPKREUSE);
+        // Uses string values so future versions can implement other modes
+        if (strSpkReuse == "allow" || gArgs.GetBoolArg("-spkreuse", false)) {
+            SpkReuseMode = SRM_ALLOW;
+        } else {
+            SpkReuseMode = SRM_REJECT;
+        }
+    }
+
     // Option to startup with mocktime set (used for regression testing):
     SetMockTime(gArgs.GetArg("-mocktime", 0)); // SetMockTime(0) is a no-op
 
@@ -1173,6 +1187,9 @@ bool AppInitParameterInteraction()
         boost::split(vstrReplacementModes, strReplacementModeList, boost::is_any_of(","));
         fEnableReplacement = (std::find(vstrReplacementModes.begin(), vstrReplacementModes.end(), "fee") != vstrReplacementModes.end());
     }
+
+    if (!CStats::parameterInteraction())
+        return false;
 
     return true;
 }
