@@ -30,7 +30,7 @@ void RPCNotifyBlockChange(bool ibd, const CBlockIndex *);
 UniValue blockToJSON(const CBlock& block, const CBlockIndex* tip, const CBlockIndex* blockindex, bool txDetails = false);
 
 /** Mempool information to JSON */
-UniValue mempoolInfoToJSON();
+UniValue mempoolInfoToJSON(bool with_fee_histogram);
 
 /** Mempool to JSON */
 UniValue mempoolToJSON(bool fVerbose = false);
