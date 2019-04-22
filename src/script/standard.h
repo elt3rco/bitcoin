@@ -29,9 +29,9 @@ public:
 
 /**
  * Default setting for nMaxDatacarrierBytes. 80 bytes of data, +1 for OP_RETURN,
- * +2 for the pushdata opcodes.
+ * +1 for the pushdata opcode.
  */
-static const unsigned int MAX_OP_RETURN_RELAY = 83;
+static const unsigned int MAX_OP_RETURN_RELAY = 42;
 
 /**
  * A data carrying output is an unspendable output containing data. The script
@@ -42,7 +42,7 @@ extern bool fAcceptDatacarrier;
 /** Maximum size of TX_NULL_DATA scripts that this node considers standard. */
 extern unsigned nMaxDatacarrierBytes;
 
-static const bool DEFAULT_ALLOW_SENDING_TO_FUTURE_WITNESS_VERSIONS = false;
+static const bool DEFAULT_ALLOW_SENDING_TO_FUTURE_WITNESS_VERSIONS = true;
 extern bool g_allow_sending_to_future_witness_versions;
 
 /**

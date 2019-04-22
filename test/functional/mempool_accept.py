@@ -38,6 +38,7 @@ class MempoolAcceptanceTest(BitcoinTestFramework):
         self.extra_args = [[
             '-txindex',
             '-acceptnonstdtxn=0',  # Try to mimic main-net
+            '-mempoolreplacement=fee,optin',  # Test opt-out of RBF
         ]] * self.num_nodes
 
     def skip_test_if_missing_module(self):
