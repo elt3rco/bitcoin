@@ -9,6 +9,7 @@ MAPPING = {
 }
 
 def module_name(path):
+    return path
     if path in MAPPING:
         path = MAPPING[path]
     if path.endswith(".h"):
