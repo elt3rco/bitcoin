@@ -1041,14 +1041,27 @@ static UniValue sweepprivkeys(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() != 1)
+    if (request.fHelp || request.params.size() != 1) {
         throw std::runtime_error(
-            "sweepprivkeys {\"privkeys\": [\"bitcoinprivkey\",...], other options}\n"
-            "\nSends bitcoins controlled by private key to specified destinations.\n"
-            "\nOptions:\n"
-            "  \"privkeys\":[\"bitcoinprivkey\",...]   (array of strings, required) An array of WIF private key(s)\n"
-            "  \"label\":\"actuallabelname\"           (string, optional) Label for received bitcoins\n"
-        );
+            RPCHelpMan{"sweepprivkeys",
+                "\nSends bitcoins controlled by private key to specified destinations.\n",
+                {
+                    {"options", RPCArg::Type::OBJ, RPCArg::Optional::NO, "",
+                        {
+                            {"privkeys", RPCArg::Type::ARR, RPCArg::Optional::NO, "An array of WIF private key(s)",
+                                {
+                                    {"privkey", RPCArg::Type::STR_HEX, RPCArg::Optional::OMITTED, ""},
+                                },
+                                },
+
+                            {"label", RPCArg::Type::STR, RPCArg::Optional::OMITTED_NAMED_ARG, "Label for received bitcoins"},
+                        },
+                        "options"},
+                },
+                RPCResults{},
+                RPCExamples{""},
+            }.ToString());
+    }
 
     // NOTE: It isn't safe to sweep-and-send in a single action, since this would leave the send missing from the transaction history
 
