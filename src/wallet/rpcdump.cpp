@@ -761,15 +761,19 @@ UniValue dumpmasterprivkey(const JSONRPCRequest& request)
         return NullUniValue;
     }
 
-    if (request.fHelp || request.params.size() != 0)
+    if (request.fHelp || request.params.size() != 0) {
         throw std::runtime_error(
-            "dumpmasterprivkey\n"
-            "\nReveals the current master private key.\n"
-            "\nResult:\n"
+            RPCHelpMan{"dumpmasterprivkey",
+                "Reveals the current master private key.\n",
+                {},
+                RPCResult{
             " \"key\"                 (string) The HD master private key\n"
-            "\nExamples:\n"
-            + HelpExampleCli("dumpmasterprivkey", "")
-        );
+                },
+                RPCExamples{
+                    HelpExampleCli("dumpmasterprivkey", "")
+                },
+            }.ToString());
+    }
 
     LOCK2(cs_main, pwallet->cs_wallet);
 
