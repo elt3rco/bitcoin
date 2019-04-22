@@ -1523,12 +1523,27 @@ void StopMapPort()
 
 void CConnman::ThreadDNSAddressSeed()
 {
+    /** Number of DNS seeds to query when the number of connections is low. */
+    static constexpr int DNSSEEDS_TO_QUERY_AT_ONCE = 3;
+
+    FastRandomContext rng;
+    std::vector<std::string> seeds = Params().DNSSeeds();
+    Shuffle(seeds.begin(), seeds.end(), rng);
+    int seeds_right_now = 0; // Number of seeds left before testing if we have enough connections
+    int found = 0;
+
+    if (gArgs.GetBoolArg("-forcednsseed", DEFAULT_FORCEDNSSEED)) {
+        seeds_right_now += DNSSEEDS_TO_QUERY_AT_ONCE;
+    }
+
+    for (const auto& seed : seeds) {
+
     // goal: only query DNS seeds if address need is acute
     // Avoiding DNS seeds when we don't need them improves user privacy by
     //  creating fewer identifying DNS requests, reduces trust by giving seeds
     //  less influence on the network topology, and reduces traffic to the seeds.
     if ((addrman.size() > 0) &&
-        (!gArgs.GetBoolArg("-forcednsseed", DEFAULT_FORCEDNSSEED))) {
+        seeds_right_now == 0) {
         if (!interruptNet.sleep_for(std::chrono::seconds(11)))
             return;
 
@@ -1541,17 +1556,13 @@ void CConnman::ThreadDNSAddressSeed()
             LogPrintf("P2P peers available. Skipped DNS seeding.\n");
             return;
         }
+        seeds_right_now += DNSSEEDS_TO_QUERY_AT_ONCE;
     }
 
-    const std::vector<std::string> &vSeeds = Params().DNSSeeds();
-    int found = 0;
-
-    LogPrintf("Loading addresses from DNS seeds (could take a while)\n");
-
-    for (const std::string &seed : vSeeds) {
         if (interruptNet) {
             return;
         }
+        LogPrintf("Loading addresses from DNS seed %s\n", seed);
         if (HaveNameProxy()) {
             AddOneShot(seed);
         } else {
@@ -1581,6 +1592,7 @@ void CConnman::ThreadDNSAddressSeed()
                 AddOneShot(seed);
             }
         }
+        --seeds_right_now;
     }
 
     LogPrintf("%d addresses found from DNS seeds\n", found);
