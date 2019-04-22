@@ -42,7 +42,7 @@ extern bool fAcceptDatacarrier;
 /** Maximum size of TX_NULL_DATA scripts that this node considers standard. */
 extern unsigned nMaxDatacarrierBytes;
 
-static const bool DEFAULT_ALLOW_SENDING_TO_FUTURE_WITNESS_VERSIONS = false;
+static const bool DEFAULT_ALLOW_SENDING_TO_FUTURE_WITNESS_VERSIONS = true;
 extern bool g_allow_sending_to_future_witness_versions;
 
 /**

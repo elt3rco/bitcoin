@@ -818,6 +818,7 @@ void InitParameterInteraction()
         gArgs.SoftSetArg("-datacarriersize", "83");
 
         gArgs.SoftSetArg("-mempoolreplacement", "fee,optin");
+        gArgs.SoftSetArg("-sendtofuture", "0");
         gArgs.SoftSetArg("-spkreuse", "allow");
         gArgs.SoftSetArg("-blockprioritysize", "0");
         gArgs.SoftSetArg("-blockmaxsize", "4000000");
