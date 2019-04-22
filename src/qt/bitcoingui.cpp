@@ -390,7 +390,7 @@ void BitcoinGUI::createActions()
         connect(m_open_wallet_action->menu(), &QMenu::aboutToShow, [this] {
             m_open_wallet_action->menu()->clear();
             for (std::string path : m_wallet_controller->getWalletsAvailableToOpen()) {
-                QString name = path.empty() ? QString("["+tr("default wallet")+"]") : QString::fromStdString(path);
+                QString name = WalletModel::getDisplayName(QString::fromStdString(path));
                 QAction* action = m_open_wallet_action->menu()->addAction(name);
                 connect(action, &QAction::triggered, [this, name, path] {
                     OpenWalletActivity* activity = m_wallet_controller->openWallet(path);
