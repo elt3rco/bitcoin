@@ -71,6 +71,9 @@ class MempoolPackagesTest(BitcoinTestFramework):
         descendant_fees = 0
         descendant_size = 0
 
+        for tx in mempool:
+            assert_equal(mempool[tx]['vsize'], mempool[tx]['size'])
+
         assert_equal(ancestor_size, sum([mempool[tx]['size'] for tx in mempool]))
         ancestor_count = MAX_ANCESTORS
         assert_equal(ancestor_fees, sum([mempool[tx]['fee'] for tx in mempool]))
