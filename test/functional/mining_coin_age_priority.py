@@ -8,7 +8,6 @@ from test_framework.blocktools import create_block, create_coinbase
 from test_framework.test_framework import BitcoinTestFramework
 from test_framework.util import (
     assert_equal,
-    sync_blocks,
 )
 
 from binascii import a2b_hex, b2a_hex
