@@ -238,7 +238,7 @@ class CompactBlocksTest(BitcoinTestFramework):
             old_node.send_and_ping(sendcmpct)
             # Header sync
             old_node.request_headers_and_sync(locator=[tip])
-            check_announcement_of_new_block(node, old_node, lambda p: "cmpctblock" in p.last_message)
+            check_announcement_of_new_block(node, old_node, lambda p: True)
 
     # This test actually causes bitcoind to (reasonably!) disconnect us, so do this last.
     def test_invalid_cmpctblock_message(self):
@@ -700,9 +700,7 @@ class CompactBlocksTest(BitcoinTestFramework):
             wait_until(lambda: l.received_block_announcement(), timeout=30, lock=mininode_lock)
         with mininode_lock:
             for l in listeners:
-                assert "cmpctblock" in l.last_message
-                l.last_message["cmpctblock"].header_and_shortids.header.calc_sha256()
-                assert_equal(l.last_message["cmpctblock"].header_and_shortids.header.sha256, block.sha256)
+                assert block.sha256 in l.announced_blockhashes
 
     # Test that we don't get disconnected if we relay a compact block with valid header,
     # but invalid transactions.
@@ -803,20 +801,15 @@ class CompactBlocksTest(BitcoinTestFramework):
         self.log.info("Running tests, pre-segwit activation:")
 
         self.log.info("Testing SENDCMPCT p2p message... ")
-        self.test_sendcmpct(self.nodes[0], self.test_node, 1)
         sync_blocks(self.nodes)
         self.test_sendcmpct(self.nodes[1], self.segwit_node, 2, old_node=self.old_node)
         sync_blocks(self.nodes)
 
         self.log.info("Testing compactblock construction...")
-        self.test_compactblock_construction(self.nodes[0], self.test_node, 1, False)
-        sync_blocks(self.nodes)
         self.test_compactblock_construction(self.nodes[1], self.segwit_node, 2, False)
         sync_blocks(self.nodes)
 
         self.log.info("Testing compactblock requests... ")
-        self.test_compactblock_requests(self.nodes[0], self.test_node, 1, False)
-        sync_blocks(self.nodes)
         self.test_compactblock_requests(self.nodes[1], self.segwit_node, 2, False)
         sync_blocks(self.nodes)
 
@@ -869,7 +862,6 @@ class CompactBlocksTest(BitcoinTestFramework):
         self.log.info("Running tests, post-segwit activation...")
 
         self.log.info("Testing compactblock construction...")
-        self.test_compactblock_construction(self.nodes[1], self.old_node, 1, True)
         self.test_compactblock_construction(self.nodes[1], self.segwit_node, 2, True)
         sync_blocks(self.nodes)
 
