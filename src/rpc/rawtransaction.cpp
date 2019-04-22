@@ -894,20 +894,26 @@ UniValue SignTransaction(interfaces::Chain& chain, CMutableTransaction& mtx, con
     // transaction to avoid rehashing.
     const CTransaction txConst(mtx);
     // Sign what we can:
+    CAmount inout_amount = 0;
+    bool known_inputs = true;
     for (unsigned int i = 0; i < mtx.vin.size(); i++) {
         CTxIn& txin = mtx.vin[i];
         const Coin& coin = view.AccessCoin(txin.prevout);
         if (coin.IsSpent()) {
+            known_inputs = false;
             TxInErrorToJSON(txin, vErrors, "Input not found or already spent");
             continue;
         }
         const CScript& prevPubKey = coin.out.scriptPubKey;
         const CAmount& amount = coin.out.nValue;
+        inout_amount += amount;
+        known_inputs &= amount > 0;
 
         SignatureData sigdata = DataFromTransaction(mtx, i, coin.out);
         // Only sign SIGHASH_SINGLE if there's a corresponding output:
         if (!fHashSingle || (i < mtx.vout.size())) {
             ProduceSignature(*keystore, MutableTransactionSignatureCreator(&mtx, i, amount, nHashType), prevPubKey, sigdata);
+            known_inputs &= sigdata.witness;
         }
 
         UpdateInput(txin, sigdata);
@@ -930,8 +936,20 @@ UniValue SignTransaction(interfaces::Chain& chain, CMutableTransaction& mtx, con
     bool fComplete = vErrors.empty();
 
     UniValue result(UniValue::VOBJ);
-    result.pushKV("hex", EncodeHexTx(CTransaction(mtx)));
+    CTransaction tx(mtx);
+    result.pushKV("hex", EncodeHexTx(tx));
     result.pushKV("complete", fComplete);
+    if (known_inputs) {
+        for (const CTxOut& txout : mtx.vout) {
+            inout_amount -= txout.nValue;
+        }
+        result.pushKV("fee", ValueFromAmount(inout_amount));
+        result.pushKV("feerate",
+            ValueFromAmount(
+                CFeeRate(inout_amount, GetVirtualTransactionSize(tx)).GetFeePerK()
+            )
+        );
+    }
     if (!vErrors.empty()) {
         result.pushKV("errors", vErrors);
     }
@@ -983,6 +1001,8 @@ static UniValue signrawtransactionwithkey(const JSONRPCRequest& request)
             "{\n"
             "  \"hex\" : \"value\",                  (string) The hex-encoded raw transaction with signature(s)\n"
             "  \"complete\" : true|false,          (boolean) If the transaction has a complete set of signatures\n"
+            "  \"fee\" : n,                        (numeric) The fee (input amounts minus output amounts), if known\n"
+            "  \"feerate\" : x.x,                  (numeric) The fee rate (in " + CURRENCY_UNIT + "/kB), if fee is known\n"
             "  \"errors\" : [                      (json array of objects) Script verification errors (if there are any)\n"
             "    {\n"
             "      \"txid\" : \"hash\",              (string) The hash of the referenced, previous transaction\n"

@@ -3460,6 +3460,8 @@ UniValue signrawtransactionwithwallet(const JSONRPCRequest& request)
             "{\n"
             "  \"hex\" : \"value\",                  (string) The hex-encoded raw transaction with signature(s)\n"
             "  \"complete\" : true|false,          (boolean) If the transaction has a complete set of signatures\n"
+            "  \"fee\" : n,                        (numeric) The fee (input amounts minus output amounts), if known\n"
+            "  \"feerate\" : x.x,                  (numeric) The fee rate (in " + CURRENCY_UNIT + "/kB), if fee is known\n"
             "  \"errors\" : [                      (json array of objects) Script verification errors (if there are any)\n"
             "    {\n"
             "      \"txid\" : \"hash\",              (string) The hash of the referenced, previous transaction\n"
