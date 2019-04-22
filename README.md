@@ -1,9 +1,7 @@
-Bitcoin Core integration/staging tree
-=====================================
+Bitcoin Knots
+=============
 
-[![Build Status](https://travis-ci.org/bitcoin/bitcoin.svg?branch=master)](https://travis-ci.org/bitcoin/bitcoin)
-
-https://bitcoincore.org
+https://bitcoinknots.org
 
 What is Bitcoin?
 ----------------
@@ -11,28 +9,38 @@ What is Bitcoin?
 Bitcoin is an experimental digital currency that enables instant payments to
 anyone, anywhere in the world. Bitcoin uses peer-to-peer technology to operate
 with no central authority: managing transactions and issuing money are carried
-out collectively by the network. Bitcoin Core is the name of open source
+out collectively by the network. Bitcoin Knots is the name of open source
 software which enables the use of this currency.
 
 For more information, as well as an immediately useable, binary version of
-the Bitcoin Core software, see https://bitcoincore.org/en/download/, or read the
-[original whitepaper](https://bitcoincore.org/bitcoin.pdf).
+the Bitcoin Knots software, see https://bitcoinknots.org/ or read the
+[original whitepaper](https://bitcoin.org/bitcoin.pdf).
 
 License
 -------
 
-Bitcoin Core is released under the terms of the MIT license. See [COPYING](COPYING) for more
+Bitcoin Knots is released under the terms of the MIT license. See [COPYING](COPYING) for more
 information or see https://opensource.org/licenses/MIT.
 
 Development Process
 -------------------
 
-The `master` branch is regularly built and tested, but is not guaranteed to be
-completely stable. [Tags](https://github.com/bitcoin/bitcoin/tags) are created
-regularly to indicate new official, stable release versions of Bitcoin Core.
+Development generally takes place as part of [Bitcoin Core](https://github.com/bitcoin/bitcoin), and is merged into
+Knots for each release.
 
-The contribution workflow is described in [CONTRIBUTING.md](CONTRIBUTING.md)
-and useful hints for developers can be found in [doc/developer-notes.md](doc/developer-notes.md).
+Even if your pull request to Core is closed, or if your feature is not
+suitable for Core (eg, because it builds on a features not supported in Core;
+relies on centralised services; etc), it may still be eligible for inclusion
+in Bitcoin Knots. In this case, a pull request may be opened on the
+[Knots GitHub](https://github.com/bitcoinknots/bitcoin) for review and consideration.
+When accepted, you are expected to maintain the submitted branch in your own
+repository, and it will be automatically merged into new releases of Knots.
+
+The developer [mailing list](https://lists.linuxfoundation.org/mailman/listinfo/bitcoin-dev)
+should be used to discuss complicated or controversial changes before working
+on a patch set.
+
+Developer IRC can be found on Freenode at #bitcoin-dev.
 
 Testing
 -------

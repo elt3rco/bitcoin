@@ -53,7 +53,7 @@ BIN_CHECKS=$(top_srcdir)/contrib/devtools/symbol-check.py \
            $(top_srcdir)/contrib/devtools/security-check.py
 
 WINDOWS_PACKAGING = src/qt/res/rendered_icons/bitcoin.ico \
-  $(top_srcdir)/share/pixmaps/nsis-header.bmp \
+  src/qt/res/rendered_icons/nsis-header.bmp \
   src/qt/res/rendered_icons/nsis-wizard.bmp \
   $(top_srcdir)/doc/README_windows.txt
 
@@ -71,7 +71,7 @@ COVERAGE_INFO = baseline.info \
 dist-hook:
 	-$(GIT) archive --format=tar HEAD -- src/clientversion.cpp | $(AMTAR) -C $(top_distdir) -xf -
 
-$(BITCOIN_WIN_INSTALLER): all-recursive
+$(BITCOIN_WIN_INSTALLER): all-recursive src/qt/res/rendered_icons/nsis-header.bmp
 	$(MKDIR_P) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIND_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(BITCOIN_QT_BIN) $(top_builddir)/release

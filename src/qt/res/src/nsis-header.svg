@@ -1,29 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <!-- Designer: Steven Hay
-     License: MIT
+  	 License: MIT
 -->
 
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg version="1.1"
-	 id="svg2" sodipodi:docname="bitcoin-logo-noshadow.svg" inkscape:version="0.48.2 r9819" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1in" height="1in"
-	 viewBox="-34 -34 580 580" enable-background="new 0 0 1024 1024" xml:space="preserve">
-
-	<!-- nice shadow with alpha 0.35 -->
-	<filter id="dropShadowAlpha">
-		<feColorMatrix result="matrixOut" in="SourceAlpha" type="saturate"
-	      values="0.1" />
-		<feGaussianBlur in="matrixOut" result="blur-out" stdDeviation="6" />
-		<feColorMatrix in="blur-out" result="color-out" type="matrix"
-		      values="0 0 0 0   0
-		              0 0 0 0   0 
-		              0 0 0 0   0 
-		              0 0 0 0.35 0"/>
-		<feBlend in="SourceGraphic" in2="color-out" mode="normal" />
-	</filter>
+	 id="svg2" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="2.632in" height="1in"
+	 viewBox="-34 -34 1526 580" enable-background="new 0 0 1024 1024" xml:space="preserve">
 	
-	<g>
+	<style type="text/css"><![CDATA[
+		text {
+			font-family: "Tuffy";
+			font-size: 170px;
+			fill: black;
+			text-anchor: left;
+		}
+	]]></style>
+	<g transform="scale(0.54, 0.54) translate(-25, 230)">
 		<radialGradient id="coinShape" cx="256.0276" cy="256.0027" r="255.9878" gradientUnits="userSpaceOnUse">
 			<stop offset="0" style="stop-color:#F9AA4B"/>
 			<stop offset="1" style="stop-color:#F7931A"/>
@@ -360,4 +355,5 @@
 		C484.805,262.68,477.979,268.813,471.352,272.93C469.32,274.121,479.373,267.948,471.352,272.93z"/>
 </g>
 	</g>
+    <text x="320" y="336">PACKAGE_NAME</text>
 </svg>
