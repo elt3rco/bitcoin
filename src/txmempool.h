@@ -30,6 +30,7 @@
 
 class CBlockIndex;
 extern CCriticalSection cs_main;
+class CScript;
 
 /** Fake height value used in Coin to signify they are only in the memory pool (since 0.8) */
 static const uint32_t MEMPOOL_HEIGHT = 0x7FFFFFFF;
@@ -694,6 +695,8 @@ public:
     TxMempoolInfo info(const uint256& hash) const;
     std::vector<TxMempoolInfo> infoAll() const;
 
+    void FindScriptPubKey(const std::set<CScript>& needles, std::map<COutPoint, Coin>& out_results);
+
     size_t DynamicMemoryUsage() const;
 
     boost::signals2::signal<void (CTransactionRef)> NotifyEntryAdded;
@@ -749,6 +752,9 @@ private:
  * It also allows you to sign a double-spend directly in
  * signrawtransactionwithkey and signrawtransactionwithwallet,
  * as long as the conflicting transaction is not yet confirmed.
+ *
+ * Its Cursor also doesn't work. In general, it is broken as a CCoinsView
+ * implementation outside of a few use cases.
  */
 class CCoinsViewMemPool : public CCoinsViewBacked
 {
