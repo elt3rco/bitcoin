@@ -86,7 +86,7 @@ static constexpr unsigned int STANDARD_LOCKTIME_VERIFY_FLAGS = LOCKTIME_VERIFY_S
                                                                LOCKTIME_MEDIAN_TIME_PAST;
 
 typedef std::unordered_set<std::string> ignore_rejects_type;
-static const ignore_rejects_type empty_ignore_rejects;
+static const ignore_rejects_type empty_ignore_rejects{};
 
 CAmount GetDustThreshold(const CTxOut& txout, const CFeeRate& dustRelayFee);
 
