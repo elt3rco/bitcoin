@@ -186,7 +186,10 @@ class SegWitTest(BitcoinTestFramework):
         self.setup_clean_chain = True
         self.num_nodes = 3
         # This test tests SegWit both pre and post-activation, so use the normal BIP9 activation.
-        self.extra_args = [["-whitelist=127.0.0.1", "-vbparams=segwit:0:999999999999"], ["-whitelist=127.0.0.1", "-acceptnonstdtxn=0", "-vbparams=segwit:0:999999999999"], ["-whitelist=127.0.0.1", "-vbparams=segwit:0:0"]]
+        self.extra_args = [
+            ["-whitelist=127.0.0.1", "-vbparams=segwit:0:999999999999"],
+            ["-whitelist=127.0.0.1", "-acceptnonstdtxn=0", "-sendtofuture=0", "-vbparams=segwit:0:999999999999"],
+            ["-whitelist=127.0.0.1", "-acceptnonstdtxn=0", "-sendtofuture=1", "-vbparams=segwit:0:0"]]
 
     def skip_test_if_missing_module(self):
         self.skip_if_no_wallet()
@@ -1413,6 +1416,8 @@ class SegWitTest(BitcoinTestFramework):
         # checked with fRequireStandard
         test_transaction_acceptance(self.nodes[0], self.test_node, tx2, with_witness=True, accepted=True)
         test_transaction_acceptance(self.nodes[1], self.std_node, tx2, with_witness=True, accepted=False)
+        node2_p2p = self.nodes[2].add_p2p_connection(TestP2PConn(), services=NODE_NETWORK | NODE_WITNESS)
+        test_transaction_acceptance(self.nodes[2], node2_p2p, tx2, with_witness=True, accepted=True)
         temp_utxo.pop()  # last entry in temp_utxo was the output we just spent
         temp_utxo.append(UTXO(tx2.sha256, 0, tx2.vout[0].nValue))
 

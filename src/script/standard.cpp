@@ -17,6 +17,8 @@ typedef std::vector<unsigned char> valtype;
 bool fAcceptDatacarrier = DEFAULT_ACCEPT_DATACARRIER;
 unsigned nMaxDatacarrierBytes = MAX_OP_RETURN_RELAY;
 
+bool g_allow_sending_to_future_witness_versions = DEFAULT_ALLOW_SENDING_TO_FUTURE_WITNESS_VERSIONS;
+
 CScriptID::CScriptID(const CScript& in) : uint160(Hash160(in.begin(), in.end())) {}
 
 WitnessV0ScriptHash::WitnessV0ScriptHash(const CScript& in)
