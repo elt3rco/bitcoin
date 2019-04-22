@@ -138,6 +138,9 @@ BITCOIN_TEST_SUITE += \
   test/gen/crypto_gen.h
 endif
 
+BITCOIN_TESTS += \
+  stats/test/stats_tests.cpp
+
 if ENABLE_WALLET
 BITCOIN_TESTS += \
   wallet/test/db_tests.cpp \
