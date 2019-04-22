@@ -52,6 +52,7 @@ bool FeeModeFromString(const std::string& mode_string, FeeEstimateMode& fee_esti
         {"UNSET", FeeEstimateMode::UNSET},
         {"ECONOMICAL", FeeEstimateMode::ECONOMICAL},
         {"CONSERVATIVE", FeeEstimateMode::CONSERVATIVE},
+        {"EXPLICIT", FeeEstimateMode::EXPLICIT},
     };
     auto mode = fee_modes.find(mode_string);
 

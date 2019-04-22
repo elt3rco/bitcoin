@@ -419,11 +419,12 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
                     {"subtractfeefromamount", RPCArg::Type::BOOL, /* default */ "false", "The fee will be deducted from the amount being sent.\n"
             "                             The recipient will receive less bitcoins than you enter in the amount field."},
                     {"replaceable", RPCArg::Type::BOOL, /* default */ "fallback to wallet's default", "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
-                    {"conf_target", RPCArg::Type::NUM, /* default */ "fallback to wallet's default", "Confirmation target (in blocks)"},
+                    {"conf_target", RPCArg::Type::NUM, /* default */ "fallback to wallet's default", "Confirmation target (in blocks), or fee rate (" + CURRENCY_UNIT + "/kB) if explicit estimate mode is used"},
                     {"estimate_mode", RPCArg::Type::STR, /* default */ "UNSET", "The fee estimate mode, must be one of:\n"
             "       \"UNSET\"\n"
             "       \"ECONOMICAL\"\n"
-            "       \"CONSERVATIVE\""},
+            "       \"CONSERVATIVE\"\n"
+            "       \"EXPLICIT\""},
                 },
                 RPCResult{
             "\"txid\"                  (string) The transaction id.\n"
@@ -432,6 +433,7 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
                     HelpExampleCli("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" 0.1")
             + HelpExampleCli("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" 0.1 \"donation\" \"seans outpost\"")
             + HelpExampleCli("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" 0.1 \"\" \"\" true")
+            + HelpExampleCli("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\" 0.1 \"\" \"\" false true 0.00002 EXPLICIT")
             + HelpExampleRpc("sendtoaddress", "\"1M72Sfpbz1BPpXFHz9m3CdqATR44Jvaydd\", 0.1, \"donation\", \"seans outpost\"")
                 },
             }.ToString());
@@ -470,16 +472,21 @@ static UniValue sendtoaddress(const JSONRPCRequest& request)
         coin_control.m_signal_bip125_rbf = request.params[5].get_bool();
     }
 
-    if (!request.params[6].isNull()) {
-        coin_control.m_confirm_target = ParseConfirmTarget(request.params[6]);
-    }
-
     if (!request.params[7].isNull()) {
         if (!FeeModeFromString(request.params[7].get_str(), coin_control.m_fee_mode)) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid estimate_mode parameter");
         }
     }
 
+    if (!request.params[6].isNull()) {
+        if (coin_control.m_fee_mode != FeeEstimateMode::EXPLICIT) {
+            coin_control.m_confirm_target = ParseConfirmTarget(request.params[6]);
+        } else {
+            coin_control.m_feerate = CFeeRate(AmountFromValue(request.params[6]));
+            // default RBF to true for explicit fee rate mode
+            coin_control.m_signal_bip125_rbf = (coin_control.m_signal_bip125_rbf ? *coin_control.m_signal_bip125_rbf : false) || request.params[5].isNull();
+        }
+    }
 
     EnsureWalletIsUnlocked(pwallet);
 
@@ -889,11 +896,12 @@ static UniValue sendmany(const JSONRPCRequest& request)
                         },
                     },
                     {"replaceable", RPCArg::Type::BOOL, /* default */ "fallback to wallet's default", "Allow this transaction to be replaced by a transaction with higher fees via BIP 125"},
-                    {"conf_target", RPCArg::Type::NUM, /* default */ "fallback to wallet's default", "Confirmation target (in blocks)"},
+                    {"conf_target", RPCArg::Type::NUM, /* default */ "fallback to wallet's default", "Confirmation target (in blocks), or fee rate (" + CURRENCY_UNIT + "/kB) if explicit estimate mode is used"},
                     {"estimate_mode", RPCArg::Type::STR, /* default */ "UNSET", "The fee estimate mode, must be one of:\n"
             "       \"UNSET\"\n"
             "       \"ECONOMICAL\"\n"
-            "       \"CONSERVATIVE\""},
+            "       \"CONSERVATIVE\"\n"
+            "       \"EXPLICIT\""},
                 },
                  RPCResult{
             "\"txid\"                   (string) The transaction id for the send. Only 1 transaction is created regardless of \n"
@@ -943,13 +951,19 @@ static UniValue sendmany(const JSONRPCRequest& request)
         coin_control.m_signal_bip125_rbf = request.params[5].get_bool();
     }
 
-    if (!request.params[6].isNull()) {
-        coin_control.m_confirm_target = ParseConfirmTarget(request.params[6]);
-    }
-
     if (!request.params[7].isNull()) {
         if (!FeeModeFromString(request.params[7].get_str(), coin_control.m_fee_mode)) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid estimate_mode parameter");
+        }
+    }
+
+    if (!request.params[6].isNull()) {
+        if (coin_control.m_fee_mode != FeeEstimateMode::EXPLICIT) {
+            coin_control.m_confirm_target = ParseConfirmTarget(request.params[6]);
+        } else {
+            coin_control.m_feerate = CFeeRate(AmountFromValue(request.params[6]));
+            // default RBF to true for explicit fee rate mode
+            coin_control.m_signal_bip125_rbf = (coin_control.m_signal_bip125_rbf ? *coin_control.m_signal_bip125_rbf : false) || request.params[5].isNull();
         }
     }
 
