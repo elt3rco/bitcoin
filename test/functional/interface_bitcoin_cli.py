@@ -65,6 +65,7 @@ class TestBitcoinCli(BitcoinTestFramework):
         assert_equal(cli_get_info['connections'], network_info['connections'])
         assert_equal(cli_get_info['proxy'], network_info['networks'][0]['proxy'])
         assert_equal(cli_get_info['difficulty'], blockchain_info['difficulty'])
+        assert_equal(cli_get_info['chain'], blockchain_info['chain'])
         assert_equal(cli_get_info['testnet'], blockchain_info['chain'] == "test")
         if self.is_wallet_compiled():
             assert_equal(cli_get_info['balance'], wallet_info['balance'])
