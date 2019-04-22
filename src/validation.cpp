@@ -1637,6 +1637,7 @@ void static FlushBlockFile(bool fFinalize = false)
         if (fFinalize)
             status &= TruncateFile(fileOld, vinfoBlockFile[nLastBlockFile].nSize);
         status &= FileCommit(fileOld);
+        DirectoryCommit(GetBlocksDir());
         fclose(fileOld);
     }
 
