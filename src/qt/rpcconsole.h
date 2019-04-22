@@ -140,6 +140,7 @@ private:
     void setTrafficGraphRange(int mins);
     /** show detailed information on ui about selected node */
     void updateNodeDetail(const CNodeCombinedStats *stats);
+    void WriteCommandHistory();
 
     enum ColumnWidths
     {

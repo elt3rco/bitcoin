@@ -503,12 +503,62 @@ RPCConsole::RPCConsole(interfaces::Node& node, const PlatformStyle *_platformSty
 
     consoleFontSize = settings.value(fontSizeSettingsKey, QFontInfo(QFont()).pointSize()).toInt();
     clear();
+
+    // load history
+    QMap<size_t, QString> rewrite_replace;
+    int size = settings.beginReadArray("nRPCConsoleWindowHistory");
+    history.clear();
+    for (int i = 0; i < size; ++i) {
+        settings.setArrayIndex(i);
+        QString cmd = settings.value("cmd").toString();
+        QString filtered_cmd;
+        {
+            std::string strFilteredCmd, dummy;
+            if (RPCParseCommandLine(nullptr, dummy, cmd.toStdString(), false, &strFilteredCmd)) {
+                filtered_cmd = QString::fromStdString(strFilteredCmd);
+            } else {
+                // Failed to parse command, so we cannot even filter it for the history
+                filtered_cmd = cmd;
+            }
+        }
+        if (cmd != filtered_cmd) {
+            // Overwrite this line, and trigger an immediate rewrite of history to purge it
+            cmd = QString(cmd.size(), 'x');
+            rewrite_replace[history.size()] = filtered_cmd;
+        }
+        history.append(cmd);
+    }
+    historyPtr = history.size();
+    settings.endArray();
+    if (!rewrite_replace.empty()) {
+        WriteCommandHistory();
+        for (QMapIterator<size_t, QString> i(rewrite_replace); i.hasNext(); ) {
+            i.next();
+            history[i.key()] = i.value();
+        }
+        WriteCommandHistory();
+    }
+}
+
+void RPCConsole::WriteCommandHistory()
+{
+    // persist history
+    QSettings settings;
+    settings.beginWriteArray("nRPCConsoleWindowHistory");
+    for (int i = 0; i < history.size(); ++i) {
+        settings.setArrayIndex(i);
+        settings.setValue("cmd", history.at(i));
+    }
+    settings.endArray();
 }
 
 RPCConsole::~RPCConsole()
 {
     QSettings settings;
     settings.setValue("RPCConsoleWindowGeometry", saveGeometry());
+
+    WriteCommandHistory();
+
     m_node.rpcUnsetTimerInterface(rpcTimerInterface);
     delete rpcTimerInterface;
     delete ui;
