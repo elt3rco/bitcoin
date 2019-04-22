@@ -2271,15 +2271,40 @@ void static UpdateTip(const CBlockIndex *pindexNew, const CChainParams& chainPar
             }
         }
         // Check the version of the last 100 blocks to see if we need to upgrade:
+        int unexpected_bit_count[VERSIONBITS_NUM_BITS + 1];
+        static constexpr int NONVERSIONBITS_UPGRADE = VERSIONBITS_NUM_BITS;
+        static constexpr int WARNING_THRESHOLD = 100/2;
+        bool warning_threshold_hit = false;
         for (int i = 0; i < 100 && pindex != nullptr; i++)
         {
             int32_t nExpectedVersion = ComputeBlockVersion(pindex->pprev, chainParams.GetConsensus());
-            if (pindex->nVersion > VERSIONBITS_LAST_OLD_BLOCK_VERSION && (pindex->nVersion & ~nExpectedVersion) != 0)
+            if (pindex->nVersion > VERSIONBITS_LAST_OLD_BLOCK_VERSION && (pindex->nVersion & ~nExpectedVersion) != 0) {
                 ++nUpgraded;
+                if ((pindex->nVersion & VERSIONBITS_TOP_MASK) == VERSIONBITS_TOP_BITS) {
+                    for (int bit = 0; bit < VERSIONBITS_NUM_BITS; ++bit) {
+                        const int32_t mask = 1 << bit;
+                        if ((nExpectedVersion & mask) != (pindex->nVersion & mask)) {
+                            if (++unexpected_bit_count[bit] > WARNING_THRESHOLD) {
+                                warning_threshold_hit = true;
+                            }
+                        }
+                    }
+                } else {
+                    // Non-versionbits upgrade
+                    if (++unexpected_bit_count[NONVERSIONBITS_UPGRADE] > WARNING_THRESHOLD) {
+                        warning_threshold_hit = true;
+                    }
+                }
+            }
             pindex = pindex->pprev;
         }
         if (nUpgraded > 0)
             AppendWarning(warningMessages, strprintf(_("%d of last 100 blocks have unexpected version"), nUpgraded));
+        if (warning_threshold_hit) {
+            std::string strWarning = _("Warning: Unrecognised block version being mined! Unknown rules may or may not be in effect");
+            // notify GetWarnings(), called by Qt and the JSON-RPC code to warn the user:
+            DoWarning(strWarning);
+        }
     }
     LogPrintf("%s: new best=%s height=%d version=0x%08x log2_work=%.8g tx=%lu date='%s' progress=%f cache=%.1fMiB(%utxo)", __func__, /* Continued */
       pindexNew->GetBlockHash().ToString(), pindexNew->nHeight, pindexNew->nVersion,
