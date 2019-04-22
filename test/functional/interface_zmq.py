@@ -69,7 +69,7 @@ class ZMQTest (BitcoinTestFramework):
             self.rawwallettx = ZMQSubscriber(socket, b"rawwallettx")
 
         self.extra_args = [
-            ["-zmqpub%s=%s" % (sub.topic.decode(), ADDRESS) for sub in [self.hashblock, self.hashtx, self.rawblock, self.rawtx, getattr(self, 'hashwallettx', None), getattr(self, 'rawwallettx', None)] if not sub is None],
+            ["-zmqpub%s=%s" % (sub.topic.decode(), ADDRESS) for sub in [self.hashblock, self.hashtx, self.rawblock, self.rawtx, getattr(self, 'hashwallettx', None), getattr(self, 'rawwallettx', None)] if sub is not None],
             [],
         ]
         self.add_nodes(self.num_nodes, self.extra_args)
