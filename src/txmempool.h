@@ -19,6 +19,7 @@
 #include <indirectmap.h>
 #include <policy/feerate.h>
 #include <primitives/transaction.h>
+#include <script/script.h>
 #include <sync.h>
 #include <random.h>
 
@@ -49,6 +50,15 @@ struct LockPoints
 
     LockPoints() : height(0), time(0), maxInputBlock(nullptr) { }
 };
+
+enum MemPool_SPK_State {
+    MSS_UNSEEN  = 0,
+    MSS_SPENT   = 1,  // .second
+    MSS_CREATED = 2,  // .first
+    MSS_BOTH    = 3,
+};
+
+typedef std::map<uint160, enum MemPool_SPK_State> SPKStates_t;
 
 class CTxMemPool;
 
@@ -147,6 +157,8 @@ public:
     int64_t GetSigOpCostWithAncestors() const { return nSigOpCostWithAncestors; }
 
     mutable size_t vTxHashesIdx; //!< Index in mempool's vTxHashes
+
+    SPKStates_t mapSPK;
 };
 
 // Helpers for modifying CTxMemPool::mapTx, which is a boost multi_index.
@@ -331,6 +343,8 @@ public:
         }
     }
 };
+
+uint160 ScriptHashkey(const CScript& script);
 
 // Multi_index tag names
 struct descendant_score {};
@@ -554,6 +568,9 @@ public:
     const setEntries & GetMemPoolParents(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
     const setEntries & GetMemPoolChildren(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
     uint64_t CalculateDescendantMaximum(txiter entry) const EXCLUSIVE_LOCKS_REQUIRED(cs);
+
+    std::map<uint160, std::pair<const CTransaction *, const CTransaction *>> mapUsedSPK;
+
 private:
     typedef std::map<txiter, setEntries, CompareIteratorByHash> cacheMap;
 

@@ -242,6 +242,7 @@ bool fHavePruned = false;
 bool fPruneMode = false;
 bool fIsBareMultisigStd = DEFAULT_PERMIT_BAREMULTISIG;
 bool fRequireStandard = true;
+SpkReuseModes SpkReuseMode;
 bool fCheckBlockIndex = false;
 bool fCheckpointsEnabled = DEFAULT_CHECKPOINTS_ENABLED;
 size_t nCoinCacheUsage = 5000 * 300;
@@ -632,8 +633,14 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         return state.Invalid(false, REJECT_DUPLICATE, "txn-already-in-mempool");
     }
 
+    auto spk_reuse_mode = SpkReuseMode;
+    if (ignore_rejects.count("txn-spk-reused")) {
+        spk_reuse_mode = SRM_ALLOW;
+    }
+    SPKStates_t mapSPK;
+
     // Check for conflicts with in-memory transactions
-    std::set<uint256> setConflicts;
+    std::map<uint256, bool> setConflicts;
     for (const CTxIn &txin : tx.vin)
     {
         const CTransaction* ptxConflicting = pool.GetConflictTx(txin.prevout);
@@ -676,8 +683,27 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
 
                 }  // ignore_rejects
 
-                setConflicts.insert(ptxConflicting->GetHash());
+                setConflicts.emplace(ptxConflicting->GetHash(), true);
             }
+        }
+    }
+
+    if (spk_reuse_mode != SRM_ALLOW) {
+        for (const CTxOut& txout : tx.vout) {
+            uint160 hashSPK = ScriptHashkey(txout.scriptPubKey);
+            const auto& SPKUsedIn = pool.mapUsedSPK.find(hashSPK);
+            if (SPKUsedIn != pool.mapUsedSPK.end()) {
+                if (SPKUsedIn->second.first) {
+                    setConflicts.emplace(SPKUsedIn->second.first->GetHash(), false);
+                }
+                if (SPKUsedIn->second.second) {
+                    setConflicts.emplace(SPKUsedIn->second.second->GetHash(), false);
+                }
+            }
+            if (mapSPK.find(hashSPK) != mapSPK.end()) {
+                MaybeReject(REJECT_NONSTANDARD, "txn-spk-reused-twinoutputs");
+            }
+            mapSPK[hashSPK] = MemPool_SPK_State(mapSPK[hashSPK] | MSS_CREATED);
         }
     }
 
@@ -731,6 +757,27 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             return error("%s: Consensus::CheckTxInputs: %s, %s", __func__, tx.GetHash().ToString(), FormatStateMessage(state));
         }
 
+        if (spk_reuse_mode != SRM_ALLOW) {
+            for (const CTxIn& txin : tx.vin) {
+                const Coin &coin = view.AccessCoin(txin.prevout);
+                uint160 hashSPK = ScriptHashkey(coin.out.scriptPubKey);
+
+                SPKStates_t::iterator mssit = mapSPK.find(hashSPK);
+                if (mssit != mapSPK.end()) {
+                    if (mssit->second & MSS_CREATED) {
+                        MaybeReject(REJECT_NONSTANDARD, "txn-spk-reused-change");
+                    }
+                }
+                const auto& SPKit = pool.mapUsedSPK.find(hashSPK);
+                if (SPKit != pool.mapUsedSPK.end()) {
+                    if (SPKit->second.second /* Spent */) {
+                        setConflicts.emplace(SPKit->second.second->GetHash(), false);
+                    }
+                }
+                mapSPK[hashSPK] = MemPool_SPK_State(mapSPK[hashSPK] | MSS_SPENT);
+            }
+        }
+
         // Check for non-standard pay-to-script-hash in inputs
         if (fRequireStandard && !AreInputsStandard(tx, view, "bad-txns-input-", reason, ignore_rejects)) {
             return state.Invalid(false, REJECT_NONSTANDARD, reason);
@@ -766,6 +813,7 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         CTxMemPoolEntry entry(ptx, nFees, nAcceptTime, dPriority, chainActive.Height(),
                               inChainInputValue, fSpendsCoinbase, nSigOpsCost, lp);
         unsigned int nSize = entry.GetTxSize();
+        entry.mapSPK = mapSPK;
 
         // Check that the transaction doesn't have an excessive number of
         // sigops, making it impossible to mine. Since the coinbase transaction
@@ -814,8 +862,12 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
         for (CTxMemPool::txiter ancestorIt : setAncestors)
         {
             const uint256 &hashAncestor = ancestorIt->GetTx().GetHash();
-            if (setConflicts.count(hashAncestor))
+            const auto& conflictit = setConflicts.find(hashAncestor);
+            if (conflictit != setConflicts.end())
             {
+                if (!conflictit->second /* mere SPK conflict, NOT invalid */) {
+                    MaybeReject(REJECT_NONSTANDARD, "txn-spk-reused-chained");
+                } else
                 return state.DoS(10, false,
                                  REJECT_INVALID, "bad-txns-spends-conflicting-tx", false,
                                  strprintf("%s spends conflicting transaction %s",
@@ -840,7 +892,11 @@ static bool AcceptToMemoryPoolWorker(const CChainParams& chainparams, CTxMemPool
             CFeeRate newFeeRate(nModifiedFees, nSize);
             std::set<uint256> setConflictsParents;
             const int maxDescendantsToVisit = 100;
-            const CTxMemPool::setEntries setIterConflicting = pool.GetIterSet(setConflicts);
+            std::set<uint256> conflicts_as_a_set;
+            std::transform(setConflicts.begin(), setConflicts.end(),
+                           std::inserter(conflicts_as_a_set, conflicts_as_a_set.end()),
+                           [](const std::pair<uint256, bool>& pair){ return pair.first; });
+            const CTxMemPool::setEntries setIterConflicting = pool.GetIterSet(conflicts_as_a_set);
             for (const auto& mi : setIterConflicting) {
                 // Don't allow the replacement to reduce the feerate of the
                 // mempool.
