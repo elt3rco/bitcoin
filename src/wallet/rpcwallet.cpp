@@ -4354,6 +4354,7 @@ UniValue walletcreatefundedpsbt(const JSONRPCRequest& request)
 
 UniValue abortrescan(const JSONRPCRequest& request); // in rpcdump.cpp
 UniValue dumpprivkey(const JSONRPCRequest& request); // in rpcdump.cpp
+UniValue dumpmasterprivkey(const JSONRPCRequest& request);
 UniValue importprivkey(const JSONRPCRequest& request);
 UniValue importaddress(const JSONRPCRequest& request);
 UniValue importpubkey(const JSONRPCRequest& request);
@@ -4377,6 +4378,7 @@ static const CRPCCommand commands[] =
     { "wallet",             "bumpfee",                          &bumpfee,                       {"txid", "options"} },
     { "wallet",             "createwallet",                     &createwallet,                  {"wallet_name", "disable_private_keys", "blank"} },
     { "wallet",             "dumpprivkey",                      &dumpprivkey,                   {"address"}  },
+    { "wallet",             "dumpmasterprivkey",                &dumpmasterprivkey,             {} },
     { "wallet",             "dumpwallet",                       &dumpwallet,                    {"filename"} },
     { "wallet",             "encryptwallet",                    &encryptwallet,                 {"passphrase"} },
     { "wallet",             "getaddressesbylabel",              &getaddressesbylabel,           {"label"} },
