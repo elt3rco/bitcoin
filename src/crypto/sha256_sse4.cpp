@@ -10,6 +10,12 @@
 
 #if defined(__x86_64__) || defined(__amd64__)
 
+#if defined(__clang__)
+#pragma clang attribute push(__attribute__((__target__("sse4"))), apply_to = function)
+#elif defined(__GNUC__)
+#pragma GCC target ("sse4")
+#endif
+
 namespace sha256_sse4
 {
 void Transform(uint32_t* s, const unsigned char* chunk, size_t blocks)
@@ -1502,5 +1508,9 @@ _SHUF_00BA:              ddq 0xFFFFFFFFFFFFFFFF0b0a090803020100
 ; shuffle xDxC -> DC00
 _SHUF_DC00:              ddq 0x0b0a090803020100FFFFFFFFFFFFFFFF
 */
+
+#if defined(__clang__)
+#pragma clang attribute pop
+#endif
 
 #endif
