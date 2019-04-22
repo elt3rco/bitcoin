@@ -8,6 +8,7 @@
 
 #include <support/allocators/zeroafterfree.h>
 #include <serialize.h>
+#include <util/system.h>
 
 #include <algorithm>
 #include <assert.h>
@@ -743,10 +744,8 @@ protected:
 
 public:
     CBufferedFile(FILE *fileIn, uint64_t nBufSize, uint64_t nRewindIn, int nTypeIn, int nVersionIn) :
-        nType(nTypeIn), nVersion(nVersionIn), nSrcPos(0), nReadPos(0), nReadLimit(std::numeric_limits<uint64_t>::max()), nRewind(nRewindIn), vchBuf(nBufSize, 0)
-    {
-        src = fileIn;
-    }
+        nType(nTypeIn), nVersion(nVersionIn), src(AdviseSequential(fileIn)), nSrcPos(0), nReadPos(0), nReadLimit(std::numeric_limits<uint64_t>::max()), nRewind(nRewindIn), vchBuf(nBufSize, 0)
+    {}
 
     ~CBufferedFile()
     {
@@ -763,7 +762,7 @@ public:
     void fclose()
     {
         if (src) {
-            ::fclose(src);
+            CloseAndUncache(src);
             src = nullptr;
         }
     }

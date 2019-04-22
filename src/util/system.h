@@ -73,6 +73,15 @@ bool LockDirectory(const fs::path& directory, const std::string lockfile_name, b
 void UnlockDirectory(const fs::path& directory, const std::string& lockfile_name);
 bool DirIsWritable(const fs::path& directory);
 
+//! Return the original FILE* unchanged. On POSIX systems that support it,
+//! also advise the kernel that the file will be accessed sequentially.
+FILE* AdviseSequential(FILE *file);
+
+//! Close a file and return the result of fclose(). On POSIX systems that
+//! support it, advise the kernel to remove the file contents from the page
+//! cache (which can help on memory-constrained systems).
+int CloseAndUncache(FILE *file);
+
 /** Release all directory locks. This is used for unit testing only, at runtime
  * the global destructor will take care of the locks.
  */
