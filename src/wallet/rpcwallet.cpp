@@ -28,6 +28,7 @@
 #include <shutdown.h>
 #include <timedata.h>
 #include <txdb.h>
+#include <txmempool.h>
 #include <util/bip32.h>
 #include <util/system.h>
 #include <util/moneystr.h>
@@ -3036,6 +3037,9 @@ static UniValue listunspent(const JSONRPCRequest& request)
             "    \"scriptPubKey\" : \"key\",   (string) the script key\n"
             "    \"amount\" : x.xxx,         (numeric) the transaction output amount in " + CURRENCY_UNIT + "\n"
             "    \"confirmations\" : n,      (numeric) The number of confirmations\n"
+            "    \"ancestorcount\" : n,      (numeric) The number of unconfirmed ancestors if spent\n"
+            "    \"ancestorsize\" : n,       (numeric) The virtual transaction size of all unconfirmed ancestors\n"
+            "    \"ancestorfees\" : n,       (numeric) The modified fees of all unconfirmed ancestors\n"
             "    \"redeemScript\" : \"script\" (string) The redeemScript if scriptPubKey is P2SH\n"
             "    \"witnessScript\" : \"script\" (string) witnessScript if the scriptPubKey is P2WSH or P2SH-P2WSH\n"
             "    \"spendable\" : xxx,        (bool) Whether we have the private keys to spend this output\n"
@@ -3180,6 +3184,15 @@ static UniValue listunspent(const JSONRPCRequest& request)
         entry.pushKV("scriptPubKey", HexStr(scriptPubKey.begin(), scriptPubKey.end()));
         entry.pushKV("amount", ValueFromAmount(out.tx->tx->vout[out.i].nValue));
         entry.pushKV("confirmations", out.nDepth);
+        if (!out.nDepth) {
+            LOCK(mempool.cs);
+            const auto it = mempool.mapTx.find(out.tx->GetHash());
+            if (it != mempool.mapTx.end()) {
+                entry.pushKV("ancestorcount", it->GetCountWithAncestors());
+                entry.pushKV("ancestorsize", it->GetSizeWithAncestors());
+                entry.pushKV("ancestorfees", it->GetModFeesWithAncestors());
+            }
+        }
         entry.pushKV("spendable", out.fSpendable);
         entry.pushKV("solvable", out.fSolvable);
         if (out.fSolvable) {
