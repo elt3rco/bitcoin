@@ -76,6 +76,12 @@ int main(int argc, char *argv[])
 
     SSL_library_init();
 
+    std::string error;
+    if (!node->readConfigFiles(error)) {
+        QWARN("Error in readConfigFiles");
+        fInvalid = true;
+    }
+
     AppTests app_tests(app);
     if (QTest::qExec(&app_tests) != 0) {
         fInvalid = true;
