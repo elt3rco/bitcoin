@@ -17,7 +17,7 @@ UniValue getmempoolstats(const JSONRPCRequest& request)
     if (request.fHelp || request.params.size() != 0) {
         throw std::runtime_error(
             RPCHelpMan{"getmempoolstats",
-                "\nReturns the collected mempool statictics (non-linear non-interpolated samples).\n",
+                "\nReturns the collected mempool statistics (non-linear non-interpolated samples).\n",
                 {},
                 RPCResult{
             "{\n"
