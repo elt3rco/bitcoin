@@ -174,6 +174,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
 
     m_last_block_num_txs = nBlockTx;
     m_last_block_weight = nBlockWeight;
+    m_last_block_size = fNeedSizeAccounting ? nBlockSize : 0;
 
     // Create coinbase transaction.
     CMutableTransaction coinbaseTx;
@@ -188,7 +189,6 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblocktemplate->vTxFees[0] = -nFees;
 
     uint64_t nSerializeSize = GetSerializeSize(*pblock, PROTOCOL_VERSION);
-    m_last_block_size = nSerializeSize;
     LogPrintf("CreateNewBlock(): total size: %u block weight: %u txs: %u fees: %ld sigops %d\n", nSerializeSize, GetBlockWeight(*pblock), nBlockTx, nFees, nBlockSigOpsCost);
 
     // Fill in header

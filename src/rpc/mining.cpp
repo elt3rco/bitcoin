@@ -195,7 +195,7 @@ static UniValue getmininginfo(const JSONRPCRequest& request)
                 RPCResult{
                     "{\n"
                     "  \"blocks\": nnn,             (numeric) The current block\n"
-                    "  \"currentblocksize\": nnn,   (numeric, optional) The block size of the last assembled block (only present if a block was ever assembled)\n"
+                    "  \"currentblocksize\": nnn,   (numeric, optional) The block size of the last assembled block (only present if a block was ever assembled, and blockmaxsize is configured)\n"
                     "  \"currentblockweight\": nnn, (numeric, optional) The block weight of the last assembled block (only present if a block was ever assembled)\n"
                     "  \"currentblocktx\": nnn,     (numeric, optional) The number of block transactions of the last assembled block (only present if a block was ever assembled)\n"
                     "  \"difficulty\": xxx.xxxxx    (numeric) The current difficulty\n"
